@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resultado Final</title>
+    <style>
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            background-color: #f4f4f9; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            height: 100vh; 
+            margin: 0; 
+        }
+        .result-card { 
+            background: white; 
+            padding: 50px; 
+            border-radius: 20px; 
+            box-shadow: 0 15px 35px rgba(0,0,0,0.1); 
+            text-align: center; 
+            max-width: 450px; 
+            width: 90%; 
+        }
+        h1 { color: #2c3e50; margin-bottom: 5px; font-size: 28px; }
+        .score-container {
+            background-color: #ebf5ff;
+            border-radius: 15px;
+            padding: 20px;
+            margin: 25px 0;
+        }
+        .score { 
+            font-size: 56px; 
+            font-weight: bold; 
+            color: #3498db; 
+            display: block;
+        }
+        .total { font-size: 20px; color: #7f8c8d; }
+        .message { color: #576574; font-size: 18px; line-height: 1.5; }
+        .footer-msg { margin-top: 30px; font-size: 14px; color: #bdc3c7; }
+    </style>
+</head>
+<body>
+    <div class="result-card">
+        <h1>Excelente, {{ nome }}!</h1>
+        <p class="message">Sua avaliação foi concluída com sucesso.</p>
+        
+        <div class="score-container">
+            <span class="score">{{ acertos }} / {{ total }}</span>
+            <span class="total">questões corretas</span>
+        </div>
+
+        <p class="message">As respostas foram salvas no sistema.</p>
+        
+        <div class="footer-msg">Você já pode fechar esta aba.</div>
+    </div>
+</body>
+</html>

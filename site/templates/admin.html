@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Painel de Resultados</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background: #f8f9fa; margin: 40px; }
+        .container { max-width: 900px; margin: auto; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
+        h1, h2 { color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 10px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #eee; }
+        th { background: #3498db; color: white; }
+        .btn-gerar { background: #27ae60; color: white; border: none; padding: 12px 20px; border-radius: 6px; cursor: pointer; font-size: 16px; transition: 0.3s; }
+        .btn-gerar:hover { background: #219150; }
+        .codigo-box { background: #e9ecef; padding: 10px; border-radius: 5px; font-weight: bold; display: inline-block; margin: 5px; border: 1px solid #ced4da; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Painel de Controle</h1>
+        
+        <section>
+            <h2>Gerar Novo Código</h2>
+            <form action="/gerar" method="post">
+                <button type="submit" class="btn-gerar">Gerar Código Único (Uso Único)</button>
+            </form>
+            <div style="margin-top: 15px;">
+                <strong>Códigos Disponíveis:</strong><br>
+                {% for c in codigos %}
+                    <span class="codigo-box">{{ c[0] }}</span>
+                {% endfor %}
+            </div>
+        </section>
+
+        <section style="margin-top: 40px;">
+            <h2>Resultados das Provas</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Nome</th>
+                        <th>Código</th>
+                        <th>Nota</th>
+                        <th>Data/Hora</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for r in resultados %}
+                    <tr>
+                        <td><strong>{{ r[0] }}</strong></td>
+                        <td><code>{{ r[1] }}</code></td>
+                        <td>{{ r[2] }} acertos</td>
+                        <td>{{ r[3] }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </section>
+    </div>
+</body>
+</html>

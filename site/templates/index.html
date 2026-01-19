@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prova - 1 Minuto por Questão</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 40px auto; padding: 20px; background-color: #f4f4f9; }
+        .card { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); position: relative; }
+        #timer-box { position: absolute; top: 20px; right: 20px; font-size: 20px; font-weight: bold; color: #e74c3c; border: 2px solid #e74c3c; padding: 5px 10px; border-radius: 5px; }
+        .questao-container { display: none; } /* Esconde todas as perguntas no início */
+        .questao-container.active { display: block; } /* Mostra apenas a ativa */
+        .btn-proxima { background: #3498db; color: white; border: none; padding: 12px 25px; border-radius: 5px; cursor: pointer; font-size: 16px; margin-top: 20px; width: 100%; }
+        .btn-proxima:hover { background: #2980b9; }
+        input[type="text"] { width: 100%; padding: 10px; margin-bottom: 20px; border: 1px solid #ddd; border-radius: 5px; box-sizing: border-box; }
+        .info-header { margin-bottom: 20px; font-size: 14px; color: #666; }
+    </style>
+</head>
+<body>
+
+    <div class="card">
+        <div id="timer-box"><span id="timer">60</span>s</div>
+        
+        <form id="quizForm" action="/submit" method="post">
+            <div id="step-0" class="questao-container active">
+    <h2>Bem-vindo!</h2>
+    <p>Você terá 60 segundos para cada pergunta.</p>
+    
+    <label><b>Seu Nome Completo:</b></label>
+    <input type="text" name="nome" id="nome_input" required placeholder="Digite seu nome...">
+    
+    <label><b>Código de Acesso:</b></label>
+    <input type="text" name="codigo" id="codigo_input" required placeholder="Digite o código da prova..." style="text-transform: uppercase;">
+    
+    <button type="button" class="btn-proxima" onclick="iniciarQuiz()">Começar Prova</button>
+</div>
+
+            {% for p in perguntas %}
+            <div id="step-{{ loop.index }}" class="questao-container">
+                <div class="info-header">Questão {{ loop.index }} de {{ perguntas|length }}</div>
+                <h3>{{ p.texto }}</h3>
+                {% for opcao in p.opcoes %}
+                <label style="display: block; margin-bottom: 10px; cursor: pointer;">
+                    <input type="radio" name="pergunta_{{ p.id }}" value="{{ opcao }}"> {{ opcao }}
+                </label>
+                {% endfor %}
+                
+                {% if loop.last %}
+                    <button type="submit" class="btn-proxima" style="background: #27ae60;">Finalizar Prova</button>
+                {% else %}
+                    <button type="button" class="btn-proxima" onclick="proximaQuestao()">Próxima Pergunta</button>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </form>
+    </div>
+
+    <script>
+        let questaoAtual = 0;
+        let tempoRestante = 60;
+        let cronometro;
+        const totalPerguntas = {{ perguntas|length }};
+        const timerDisplay = document.getElementById('timer');
+        const form = document.getElementById('quizForm');
+
+        function atualizarTimer() {
+            timerDisplay.textContent = tempoRestante;
+            if (tempoRestante <= 0) {
+                proximaQuestao(); // Pula para a próxima se o tempo acabar
+            }
+            tempoRestante--;
+        }
+
+        function iniciarQuiz() {
+            const nome = document.getElementById('nome_input').value;
+            if (!nome) { alert("Por favor, digite seu nome."); return; }
+            
+            mostrarPasso(1);
+            cronometro = setInterval(atualizarTimer, 1000);
+        }
+
+        function proximaQuestao() {
+            if (questaoAtual < totalPerguntas) {
+                questaoAtual++;
+                tempoRestante = 60; // Reinicia o tempo
+                mostrarPasso(questaoAtual);
+            } else {
+                finalizar();
+            }
+        }
+
+        function mostrarPasso(passo) {
+            // Esconde tudo
+            document.querySelectorAll('.questao-container').forEach(div => div.classList.remove('active'));
+            // Mostra o passo atual
+            const proximoCard = document.getElementById(`step-${passo}`);
+            if (proximoCard) {
+                proximoCard.classList.add('active');
+                questaoAtual = passo;
+            } else {
+                finalizar();
+            }
+        }
+
+        function finalizar() {
+            clearInterval(cronometro);
+            window.onbeforeunload = null;
+            form.submit();
+        }
+
+        // Impede fechar sem querer
+        window.onbeforeunload = function() { return "Deseja mesmo sair?"; };
+    </script>
+</body>
+</html>
