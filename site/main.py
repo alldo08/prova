@@ -383,14 +383,14 @@ async def resultados_publicos():
 
     linhas = ""
     for nome, codigo, nota, data in dados:
-    linhas += f"""
-    <tr>
-        <td>{nome}</td>
-        <td>{codigo}</td>
-        <td>{nota}</td>
-        <td>{data}</td>
-    </tr>
-    """
+        linhas += f"""
+        <tr>
+            <td>{nome}</td>
+            <td>{codigo}</td>
+            <td>{nota}</td>
+            <td>{data}</td>
+        </tr>
+        """
 
     return f"""
     <!DOCTYPE html>
@@ -439,6 +439,7 @@ async def resultados_publicos():
     </body>
     </html>
     """
+
 
 
 
