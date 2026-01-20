@@ -332,7 +332,7 @@ def exportar_resultados_csv():
             nota,
             data
         FROM resultados
-        ORDER BY TO_TIMESTAMP(data, 'DD/MM/YYYY HH24:MI') DESC
+        ORDER BY data DESC
     """)
 
     dados = cursor.fetchall()
@@ -343,9 +343,10 @@ def exportar_resultados_csv():
     output = io.StringIO()
     writer = csv.writer(output, delimiter=';')
 
-    # cabeçalho do CSV
+    # Cabeçalho do CSV
     writer.writerow(["Nome", "Código", "Nota", "Data"])
 
+    # Linhas
     for nome, codigo, nota, data in dados:
         writer.writerow([nome, codigo, nota, data])
 
@@ -439,6 +440,7 @@ async def resultados_publicos():
     </body>
     </html>
     """
+
 
 
 
