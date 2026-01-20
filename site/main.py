@@ -15,10 +15,8 @@ from fastapi.templating import Jinja2Templates
 # CONFIGURAÇÃO
 # =============================
 
-DATABASE_URL = os.getenv(
-    "DATABASE_URL",
-    "postgresql://postgres:provasanter@db.cemkjzuumwucitxgoeem.supabase.co:5432/postgres?sslmode=require"
-)
+DATABASE_URL=postgresql://postgres:provasanter@aws-0-sa-east-1.pooler.supabase.com:5432/postgres?sslmode=require
+
 
 timezone_br = pytz.timezone("America/Sao_Paulo")
 
@@ -202,3 +200,4 @@ async def gerar_codigo():
     conn.close()
 
     return RedirectResponse(url="/admin", status_code=303)
+
