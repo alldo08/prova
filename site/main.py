@@ -217,46 +217,42 @@ async def home(request: Request):
 async def submit(request: Request, nome: str = Form(...), codigo: str = Form(...)):
     codigo = codigo.strip().upper()
     
-    conn = sqlite3.connect("quiz.db")
-    cursor = conn.cursor()
-    
-    # BUSCA O CÓDIGO NO BANCO
-    cursor.execute("SELECT usado FROM codigos_validos WHERE codigo = ?", (codigo,))
-    resultado = cursor.fetchone()
-
-    # VALIDAÇÃO: Se não existe OU se já foi usado (usado == 1)
-    if resultado is None or resultado[0] == 1:
-        conn.close()
-        msg = "Código inexistente!" if resultado is None else "Este código já foi usado!"
-        
-        # IMPORTANTE: Recarregar as perguntas para a página não abrir vazia
-        perguntas_aleatorias = deepcopy(PERGUNTAS)
-        random.shuffle(perguntas_aleatorias)
-        for p in perguntas_aleatorias:
-            random.shuffle(p["opcoes"])
-            
-        # RETORNA PARA A MESMA PÁGINA (index.html) COM O ERRO
-        return templates.TemplateResponse("index.html", {
-            "request": request, 
-            "perguntas": perguntas_aleatorias,
-            "erro": msg,
-            "nome_preenchido": nome
-        })
-
-    # SE O CÓDIGO FOR VÁLIDO, O CÓDIGO CONTINUA DAQUI PARA BAIXO...
+    # Coleta todos os dados enviados pelo formulário
     form_data = await request.form()
+    
     acertos = 0
-    # ... (seu código de calcular acertos) ...
+    total_perguntas = len(PERGUNTAS)
 
-    # Finaliza marcando o código como usado
-    cursor.execute("INSERT INTO resultados (nome, codigo, nota, data) VALUES (?, ?, ?, ?)", 
-                   (nome, codigo, acertos, datetime.now().strftime("%d/%m/%Y %H:%M")))
-    cursor.execute("UPDATE codigos_validos SET usado = 1 WHERE codigo = ?", (codigo,))
-    conn.commit()
-    conn.close()
+    # Percorre a lista oficial de perguntas do seu Python
+    for p in PERGUNTAS:
+        # Pega o que o aluno respondeu para esta pergunta específica
+        # O nome do campo no HTML é "pergunta_1", "pergunta_2", etc.
+        resposta_aluno = form_data.get(f"pergunta_{p['id']}")
 
-    return templates.TemplateResponse("resultado.html", {"request": request, "nome": nome, "acertos": acertos, "total": len(PERGUNTAS)})
-    # Rota para mostrar a página de login
+        if resposta_aluno:
+            # .strip() remove espaços acidentais no início ou fim
+            if str(resposta_aluno).strip() == str(p['correta']).strip():
+                acertos += 1
+    
+    # Salva no banco de dados
+    try:
+        conn = sqlite3.connect("quiz.db")
+        cursor = conn.cursor()
+        cursor.execute("INSERT INTO resultados (nome, codigo, nota, data) VALUES (?, ?, ?, ?)", 
+                       (nome, codigo, acertos, datetime.now().strftime("%d/%m/%Y %H:%M")))
+        cursor.execute("UPDATE codigos_validos SET usado = 1 WHERE codigo = ?", (codigo,))
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        print(f"Erro ao salvar no banco: {e}")
+
+    # Retorna o resultado para o aluno
+    return templates.TemplateResponse("resultado.html", {
+        "request": request, 
+        "nome": nome, 
+        "acertos": acertos, 
+        "total": total_perguntas
+    })
 @app.get("/login", response_class=HTMLResponse)
 async def login_page(request: Request):
     return """
