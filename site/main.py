@@ -13,6 +13,10 @@ import sqlite3
 from datetime import datetime
 import random
 from copy import deepcopy # Para não bagunçar a lista original
+import pytz  # Biblioteca para fusos horários
+
+# Defina o fuso horário de Brasília
+timezone_br = pytz.timezone('America/Sao_Paulo')
 app = FastAPI()
 templates = Jinja2Templates(directory="templates")
 
@@ -223,23 +227,28 @@ async def submit(request: Request, nome: str = Form(...), codigo: str = Form(...
     acertos = 0
     total_perguntas = len(PERGUNTAS)
 
-    # Percorre a lista oficial de perguntas do seu Python
+    # Lógica de correção
     for p in PERGUNTAS:
-        # Pega o que o aluno respondeu para esta pergunta específica
-        # O nome do campo no HTML é "pergunta_1", "pergunta_2", etc.
         resposta_aluno = form_data.get(f"pergunta_{p['id']}")
-
         if resposta_aluno:
-            # .strip() remove espaços acidentais no início ou fim
             if str(resposta_aluno).strip() == str(p['correta']).strip():
                 acertos += 1
     
+    # --- AJUSTE DE DATA E HORA PARA O BRASIL ---
+    fuso_br = pytz.timezone('America/Sao_Paulo')
+    agora_br = datetime.now(fuso_br)
+    data_formatada = agora_br.strftime("%d/%m/%Y %H:%M")
+    # -------------------------------------------
+
     # Salva no banco de dados
     try:
         conn = sqlite3.connect("quiz.db")
         cursor = conn.cursor()
+        
+        # Inserindo com a data_formatada correta
         cursor.execute("INSERT INTO resultados (nome, codigo, nota, data) VALUES (?, ?, ?, ?)", 
-                       (nome, codigo, acertos, datetime.now().strftime("%d/%m/%Y %H:%M")))
+                       (nome, codigo, acertos, data_formatada))
+        
         cursor.execute("UPDATE codigos_validos SET usado = 1 WHERE codigo = ?", (codigo,))
         conn.commit()
         conn.close()
