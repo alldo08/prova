@@ -289,7 +289,7 @@ async def admin_panel(request: Request):
     cursor = conn.cursor()
     cursor.execute("SELECT nome, codigo, nota, data FROM resultados ORDER BY data DESC")
     res = cursor.fetchall()
-    cursor.execute("SELECT codigo FROM codigos_validos WHERE usado = 0")
+    cursor.execute("SELECT codigo FROM codigos_validos WHERE usado = false")
     cods = cursor.fetchall()
     cursor.close()
     conn.close()
@@ -317,6 +317,7 @@ async def gerar_codigo():
     conn.close()
 
     return RedirectResponse(url="/admin", status_code=303)
+
 
 
 
