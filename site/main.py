@@ -370,7 +370,7 @@ async def resultados_publicos():
             acertos,
             total,
             data_envio
-        FROM respostas
+        FROM resultados
         ORDER BY acertos DESC
     """)
 
@@ -437,6 +437,7 @@ async def resultados_publicos():
     </body>
     </html>
     """
+
 
 
 
