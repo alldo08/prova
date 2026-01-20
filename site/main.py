@@ -181,6 +181,22 @@ PERGUNTAS = [
   # Adicione as outras 8 aqui...
 ]
 
+@app.get("/verificar_codigo/{codigo}")
+async def verificar_codigo(codigo: str):
+    codigo = codigo.strip().upper()
+    conn = sqlite3.connect("quiz.db")
+    cursor = conn.cursor()
+    cursor.execute("SELECT usado FROM codigos_validos WHERE codigo = ?", (codigo,))
+    resultado = cursor.fetchone()
+    conn.close()
+
+    if resultado is None:
+        return {"status": "erro", "mensagem": "Código inexistente!"}
+    elif resultado[0] == 1:
+        return {"status": "erro", "mensagem": "Este código já foi usado!"}
+    
+    return {"status": "sucesso"} 
+
 @app.get("/", response_class=HTMLResponse)
 async def home(request: Request):
     # Criamos uma cópia para não alterar a ordem global das perguntas
@@ -200,35 +216,46 @@ async def home(request: Request):
 @app.post("/submit")
 async def submit(request: Request, nome: str = Form(...), codigo: str = Form(...)):
     codigo = codigo.strip().upper()
+    
     conn = sqlite3.connect("quiz.db")
     cursor = conn.cursor()
     
-    # Verifica se o código é válido e não foi usado
-    cursor.execute("SELECT usado FROM codigos_validos WHERE codigo = ? AND usado = 0", (codigo,))
-    if not cursor.fetchone():
-        conn.close()
-        return HTMLResponse("<h1>Código inválido ou já utilizado!</h1><a href='/'>Voltar</a>")
+    # BUSCA O CÓDIGO NO BANCO
+    cursor.execute("SELECT usado FROM codigos_validos WHERE codigo = ?", (codigo,))
+    resultado = cursor.fetchone()
 
+    # VALIDAÇÃO: Se não existe OU se já foi usado (usado == 1)
+    if resultado is None or resultado[0] == 1:
+        conn.close()
+        msg = "Código inexistente!" if resultado is None else "Este código já foi usado!"
+        
+        # IMPORTANTE: Recarregar as perguntas para a página não abrir vazia
+        perguntas_aleatorias = deepcopy(PERGUNTAS)
+        random.shuffle(perguntas_aleatorias)
+        for p in perguntas_aleatorias:
+            random.shuffle(p["opcoes"])
+            
+        # RETORNA PARA A MESMA PÁGINA (index.html) COM O ERRO
+        return templates.TemplateResponse("index.html", {
+            "request": request, 
+            "perguntas": perguntas_aleatorias,
+            "erro": msg,
+            "nome_preenchido": nome
+        })
+
+    # SE O CÓDIGO FOR VÁLIDO, O CÓDIGO CONTINUA DAQUI PARA BAIXO...
     form_data = await request.form()
     acertos = 0
-    for p in PERGUNTAS:
-        if form_data.get(f"pergunta_{p['id']}") == p['correta']:
-            acertos += 1
-    
-    # Salva no banco e marca o código como usado (deleta a validade dele)
+    # ... (seu código de calcular acertos) ...
+
+    # Finaliza marcando o código como usado
     cursor.execute("INSERT INTO resultados (nome, codigo, nota, data) VALUES (?, ?, ?, ?)", 
                    (nome, codigo, acertos, datetime.now().strftime("%d/%m/%Y %H:%M")))
     cursor.execute("UPDATE codigos_validos SET usado = 1 WHERE codigo = ?", (codigo,))
-    
     conn.commit()
     conn.close()
 
-    return templates.TemplateResponse("resultado.html", {
-        "request": request, 
-        "nome": nome, 
-        "acertos": acertos, 
-        "total": len(PERGUNTAS)
-    })
+    return templates.TemplateResponse("resultado.html", {"request": request, "nome": nome, "acertos": acertos, "total": len(PERGUNTAS)})
     # Rota para mostrar a página de login
 @app.get("/login", response_class=HTMLResponse)
 async def login_page(request: Request):
@@ -283,6 +310,5 @@ async def gerar_codigo():
     # Redireciona de volta para o admin. 
     # Usamos o código 303 para garantir que ele faça um GET na volta.
     return RedirectResponse(url="/admin", status_code=303)
-    
     
     

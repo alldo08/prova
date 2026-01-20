@@ -7,46 +7,53 @@
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 40px auto; padding: 20px; background-color: #f4f4f9; }
         .card { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); position: relative; }
-        #timer-box { position: absolute; top: 20px; right: 20px; font-size: 20px; font-weight: bold; color: #e74c3c; border: 2px solid #e74c3c; padding: 5px 10px; border-radius: 5px; }
-        .questao-container { display: none; } /* Esconde todas as perguntas no início */
-        .questao-container.active { display: block; } /* Mostra apenas a ativa */
+        #timer-box { display: none; position: absolute; top: 20px; right: 20px; font-size: 20px; font-weight: bold; color: #e74c3c; border: 2px solid #e74c3c; padding: 5px 10px; border-radius: 5px; }
+        .questao-container { display: none; } 
+        .questao-container.active { display: block; } 
         .btn-proxima { background: #3498db; color: white; border: none; padding: 12px 25px; border-radius: 5px; cursor: pointer; font-size: 16px; margin-top: 20px; width: 100%; }
         .btn-proxima:hover { background: #2980b9; }
         input[type="text"] { width: 100%; padding: 10px; margin-bottom: 20px; border: 1px solid #ddd; border-radius: 5px; box-sizing: border-box; }
-        .info-header { margin-bottom: 20px; font-size: 14px; color: #666; }
+        .error-msg { display: none; background-color: #ffcccc; color: #cc0000; padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #cc0000; text-align: center; font-weight: bold; }
+        label { display: block; margin-bottom: 10px; cursor: pointer; padding: 10px; border: 1px solid #eee; border-radius: 5px; transition: 0.3s; }
+        label:hover { background-color: #f0f7ff; }
     </style>
 </head>
 <body>
+
+    <div id="erro-container" class="error-msg">
+        {% if erro %}{{ erro }}{% endif %}
+    </div>
 
     <div class="card">
         <div id="timer-box"><span id="timer">60</span>s</div>
         
         <form id="quizForm" action="/submit" method="post">
+            
             <div id="step-0" class="questao-container active">
-    <h2>Bem-vindo!</h2>
-    <p>Você terá 60 segundos para cada pergunta.</p>
-    
-    <label><b>Seu Nome Completo:</b></label>
-    <input type="text" name="nome" id="nome_input" required placeholder="Digite seu nome...">
-    
-    <label><b>Código de Acesso:</b></label>
-    <input type="text" name="codigo" id="codigo_input" required placeholder="Digite o código da prova..." style="text-transform: uppercase;">
-    
-    <button type="button" class="btn-proxima" onclick="iniciarQuiz()">Começar Prova</button>
-</div>
+                <h2>Bem-vindo!</h2>
+                <p>Você terá 60 segundos para cada pergunta.</p>
+                
+                <label><b>Seu Nome Completo:</b></label>
+                <input type="text" name="nome" id="nome_input" required placeholder="Digite seu nome..." value="{{ nome_preenchido if nome_preenchido else '' }}">
+                
+                <label><b>Código de Acesso:</b></label>
+                <input type="text" name="codigo" id="codigo_input" required placeholder="Digite o código da prova..." style="text-transform: uppercase;">
+                
+                <button type="button" id="btn-iniciar" class="btn-proxima" onclick="iniciarQuiz()">Começar Prova</button>
+            </div>
 
             {% for p in perguntas %}
             <div id="step-{{ loop.index }}" class="questao-container">
-                <div class="info-header">Questão {{ loop.index }} de {{ perguntas|length }}</div>
+                <div style="color: #666; font-size: 14px; margin-bottom: 10px;">Questão {{ loop.index }} de {{ perguntas|length }}</div>
                 <h3>{{ p.texto }}</h3>
                 {% for opcao in p.opcoes %}
-                <label style="display: block; margin-bottom: 10px; cursor: pointer;">
+                <label>
                     <input type="radio" name="pergunta_{{ p.id }}" value="{{ opcao }}"> {{ opcao }}
                 </label>
                 {% endfor %}
                 
                 {% if loop.last %}
-                    <button type="submit" class="btn-proxima" style="background: #27ae60;">Finalizar Prova</button>
+                    <button type="button" class="btn-proxima" style="background: #27ae60;" onclick="finalizar()">Finalizar Prova</button>
                 {% else %}
                     <button type="button" class="btn-proxima" onclick="proximaQuestao()">Próxima Pergunta</button>
                 {% endif %}
@@ -61,28 +68,58 @@
         let cronometro;
         const totalPerguntas = {{ perguntas|length }};
         const timerDisplay = document.getElementById('timer');
-        const form = document.getElementById('quizForm');
+        const timerBox = document.getElementById('timer-box');
+        const quizForm = document.getElementById('quizForm');
+        const erroDiv = document.getElementById('erro-container');
+
+        async function iniciarQuiz() {
+            const nome = document.getElementById('nome_input').value.trim();
+            const codigo = document.getElementById('codigo_input').value.trim().toUpperCase();
+            const btn = document.getElementById('btn-iniciar');
+
+            if (!nome || !codigo) { 
+                alert("Por favor, preencha seu nome e o código de acesso."); 
+                return; 
+            }
+
+            btn.disabled = true;
+            btn.innerText = "Verificando...";
+
+            try {
+                const response = await fetch(`/verificar_codigo/${codigo}`);
+                const data = await response.json();
+
+                if (data.status === "sucesso") {
+                    erroDiv.style.display = 'none';
+                    timerBox.style.display = 'block';
+                    mostrarPasso(1);
+                    cronometro = setInterval(atualizarTimer, 1000);
+                } else {
+                    erroDiv.innerText = "⚠️ " + (data.mensagem || "Código inválido.");
+                    erroDiv.style.display = 'block';
+                    btn.disabled = false;
+                    btn.innerText = "Começar Prova";
+                }
+            } catch (error) {
+                erroDiv.innerText = "⚠️ Erro de conexão com o servidor.";
+                erroDiv.style.display = 'block';
+                btn.disabled = false;
+                btn.innerText = "Começar Prova";
+            }
+        }
 
         function atualizarTimer() {
             timerDisplay.textContent = tempoRestante;
             if (tempoRestante <= 0) {
-                proximaQuestao(); // Pula para a próxima se o tempo acabar
+                proximaQuestao();
             }
             tempoRestante--;
-        }
-
-        function iniciarQuiz() {
-            const nome = document.getElementById('nome_input').value;
-            if (!nome) { alert("Por favor, digite seu nome."); return; }
-            
-            mostrarPasso(1);
-            cronometro = setInterval(atualizarTimer, 1000);
         }
 
         function proximaQuestao() {
             if (questaoAtual < totalPerguntas) {
                 questaoAtual++;
-                tempoRestante = 60; // Reinicia o tempo
+                tempoRestante = 60;
                 mostrarPasso(questaoAtual);
             } else {
                 finalizar();
@@ -90,26 +127,30 @@
         }
 
         function mostrarPasso(passo) {
-            // Esconde tudo
             document.querySelectorAll('.questao-container').forEach(div => div.classList.remove('active'));
-            // Mostra o passo atual
             const proximoCard = document.getElementById(`step-${passo}`);
             if (proximoCard) {
                 proximoCard.classList.add('active');
                 questaoAtual = passo;
-            } else {
-                finalizar();
             }
         }
 
         function finalizar() {
             clearInterval(cronometro);
-            window.onbeforeunload = null;
-            form.submit();
+            window.onbeforeunload = null; 
+            // Garante o envio manual para evitar bloqueios de validação do HTML5
+            quizForm.submit();
         }
 
-        // Impede fechar sem querer
-        window.onbeforeunload = function() { return "Deseja mesmo sair?"; };
+        window.onbeforeunload = function() { 
+            if(questaoAtual > 0) return "Sair agora perderá seu progresso."; 
+        };
+
+        window.onload = function() {
+            if (erroDiv.innerText.trim() !== "") {
+                erroDiv.style.display = 'block';
+            }
+        };
     </script>
 </body>
 </html>
