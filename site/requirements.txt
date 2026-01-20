@@ -2,5 +2,5 @@ fastapi
 uvicorn
 jinja2
 python-multipart
-a2wsgi
+psycopg2-binary
 pytz
