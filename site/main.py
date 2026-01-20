@@ -15,7 +15,7 @@ from fastapi.templating import Jinja2Templates
 # CONFIGURAÇÃO
 # =============================
 
-DATABASE_URL = os.getenv("DATABASE_URL")
+DATABASE_URL = os.getenv("DATABASE_URL").strip()
 
 
 timezone_br = pytz.timezone("America/Sao_Paulo")
@@ -200,5 +200,6 @@ async def gerar_codigo():
     conn.close()
 
     return RedirectResponse(url="/admin", status_code=303)
+
 
 
