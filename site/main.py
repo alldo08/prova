@@ -325,14 +325,13 @@ def exportar_resultados_csv():
     cursor = conn.cursor()
 
     cursor.execute("""
-        SELECT
-            nome,
-            acertos,
-            total,
-            data_envio
-        FROM respostas
-        ORDER BY acertos DESC
-    """)
+    SELECT
+        nome,
+        nota,
+        data
+    FROM resultados
+    ORDER BY nota DESC, data ASC
+""")
 
     dados = cursor.fetchall()
 
@@ -365,14 +364,14 @@ async def resultados_publicos():
     cursor = conn.cursor()
 
     cursor.execute("""
-        SELECT
-            nome,
-            acertos,
-            total,
-            data_envio
-        FROM resultados
-        ORDER BY acertos DESC
-    """)
+    SELECT
+        nome,
+        codigo,
+        nota,
+        data
+    FROM resultados
+    ORDER BY nota DESC, data ASC
+""")
 
     dados = cursor.fetchall()
 
@@ -437,6 +436,7 @@ async def resultados_publicos():
     </body>
     </html>
     """
+
 
 
 
