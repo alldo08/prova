@@ -4,7 +4,8 @@ import secrets
 import pytz
 from datetime import datetime
 from copy import deepcopy
-
+import csv
+import io
 import psycopg2
 import psycopg2.extras
 from fastapi import FastAPI, Request, Form, HTTPException
@@ -318,8 +319,124 @@ async def gerar_codigo():
 
     return RedirectResponse(url="/admin", status_code=303)
 
+@app.get("/resultados/csv")
+def exportar_resultados_csv():
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        SELECT
+            nome,
+            acertos,
+            total,
+            data_envio
+        FROM respostas
+        ORDER BY acertos DESC
+    """)
+
+    dados = cursor.fetchall()
+
+    cursor.close()
+    conn.close()
+
+    output = io.StringIO()
+    writer = csv.writer(output)
+
+    # cabeçalho
+    writer.writerow(["Nome", "Acertos", "Total", "Data"])
+
+    for nome, acertos, total, data in dados:
+        writer.writerow([nome, acertos, total, data.strftime("%d/%m/%Y")])
+
+    output.seek(0)
+
+    return StreamingResponse(
+        output,
+        media_type="text/csv",
+        headers={
+            "Content-Disposition": "attachment; filename=resultados_prova.csv"
+        }
+    )
 
 
+@app.get("/resultados", response_class=HTMLResponse)
+async def resultados_publicos():
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        SELECT
+            nome,
+            acertos,
+            total,
+            data_envio
+        FROM respostas
+        ORDER BY acertos DESC
+    """)
+
+    dados = cursor.fetchall()
+
+    cursor.close()
+    conn.close()
+
+    linhas = ""
+    for nome, acertos, total, data in dados:
+        linhas += f"""
+        <tr>
+            <td>{nome}</td>
+            <td>{acertos}</td>
+            <td>{total}</td>
+            <td>{data.strftime('%d/%m/%Y')}</td>
+        </tr>
+        """
+
+    return f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="utf-8">
+        <title>Resultados da Prova</title>
+    </head>
+    <body style="font-family:Arial; background:#f4f6f8; padding:30px">
+
+        <div style="max-width:900px;margin:auto">
+
+            <div style="display:flex;justify-content:space-between;align-items:center">
+                <h2>Resultados da Prova</h2>
+
+                <a href="/resultados/csv" style="
+                    background:#2a5298;
+                    color:white;
+                    padding:10px 16px;
+                    border-radius:6px;
+                    text-decoration:none;
+                    font-weight:bold;
+                ">
+                    ⬇ Exportar CSV
+                </a>
+            </div>
+
+            <table style="
+                width:100%;
+                margin-top:15px;
+                border-collapse:collapse;
+                background:white;
+                box-shadow:0 10px 30px rgba(0,0,0,.1)
+            ">
+                <tr style="background:#2a5298;color:white">
+                    <th style="padding:12px">Nome</th>
+                    <th>Acertos</th>
+                    <th>Total</th>
+                    <th>Data</th>
+                </tr>
+                {linhas}
+            </table>
+
+        </div>
+
+    </body>
+    </html>
+    """
 
 
 
