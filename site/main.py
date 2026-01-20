@@ -326,13 +326,14 @@ def exportar_resultados_csv():
     cursor = conn.cursor()
 
     cursor.execute("""
-    SELECT
-        nome,
-        nota,
-        data
-    FROM resultados
-    ORDER BY nota DESC, data ASC
-""")
+        SELECT
+            nome,
+            codigo,
+            nota,
+            data
+        FROM resultados
+        ORDER BY TO_TIMESTAMP(data, 'DD/MM/YYYY HH24:MI') DESC
+    """)
 
     dados = cursor.fetchall()
 
@@ -340,13 +341,13 @@ def exportar_resultados_csv():
     conn.close()
 
     output = io.StringIO()
-    writer = csv.writer(output)
+    writer = csv.writer(output, delimiter=';')
 
-    # cabeçalho
-    writer.writerow(["Nome", "Acertos", "Total", "Data"])
+    # cabeçalho do CSV
+    writer.writerow(["Nome", "Código", "Nota", "Data"])
 
-    for nome, acertos, total, data in dados:
-        writer.writerow([nome, acertos, total, data.strftime("%d/%m/%Y")])
+    for nome, codigo, nota, data in dados:
+        writer.writerow([nome, codigo, nota, data])
 
     output.seek(0)
 
@@ -354,10 +355,9 @@ def exportar_resultados_csv():
         output,
         media_type="text/csv",
         headers={
-            "Content-Disposition": "attachment; filename=resultados_prova.csv"
+            "Content-Disposition": "attachment; filename=resultados.csv"
         }
     )
-
 
 @app.get("/resultados", response_class=HTMLResponse)
 async def resultados_publicos():
@@ -439,6 +439,7 @@ async def resultados_publicos():
     </body>
     </html>
     """
+
 
 
 
