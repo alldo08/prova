@@ -365,14 +365,14 @@ async def resultados_publicos():
     cursor = conn.cursor()
 
     cursor.execute("""
-        SELECT
-            nome,
-            codigo,
-            nota,
-            TO_CHAR(data, 'DD/MM/YYYY') AS data
-        FROM resultados
-        ORDER BY nota DESC, data ASC
-    """)
+    SELECT
+        nome,
+        codigo,
+        nota,
+        TO_CHAR(data::date, 'DD/MM/YYYY') AS data
+    FROM resultados
+    ORDER BY nota DESC, data::date ASC
+""")
 
     dados = cursor.fetchall()
 
@@ -437,6 +437,7 @@ async def resultados_publicos():
     </body>
     </html>
     """
+
 
 
 
