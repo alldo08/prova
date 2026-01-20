@@ -168,118 +168,135 @@ async def submit(request: Request, nome: str = Form(...), codigo: str = Form(...
 @app.get("/login", response_class=HTMLResponse)
 async def login_page():
     return """
-    <!DOCTYPE html>
-    <html lang="pt-BR">
-    <head>
-        <meta charset="UTF-8">
-        <title>Acesso Administrativo</title>
-    </head>
-    <body style="
-        margin:0;
-        height:100vh;
-        display:flex;
-        justify-content:center;
-        align-items:center;
-        background:linear-gradient(135deg, #1e3c72, #2a5298);
-        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    ">
-        <form action="/admin" method="post" style="
-            background:#ffffff;
-            padding:40px 35px;
-            width:320px;
-            border-radius:14px;
-            box-shadow:0 25px 60px rgba(0,0,0,0.25);
-            box-sizing:border-box;
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Login Admin</title>
+</head>
+<body style="
+    margin:0;
+    height:100vh;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    background:linear-gradient(135deg,#0f2027,#203a43,#2c5364);
+    font-family:Segoe UI,Tahoma,sans-serif;
+">
+
+<div style="
+    background:#fff;
+    width:340px;
+    padding:40px;
+    border-radius:16px;
+    box-shadow:0 30px 70px rgba(0,0,0,.3);
+">
+
+<h2 style="text-align:center;margin-bottom:25px;color:#2c3e50;">
+    🔐 Área Administrativa
+</h2>
+
+<form action="/admin" method="post">
+    <label style="font-size:14px;color:#555;">Usuário</label>
+    <input name="user" required
+        style="
+            width:100%;
+            padding:12px;
+            margin:6px 0 16px;
+            border-radius:8px;
+            border:1px solid #ccc;
+            font-size:14px;
         ">
-            <h2 style="
-                margin:0 0 25px 0;
-                text-align:center;
-                color:#2c3e50;
-                font-weight:600;
-            ">
-                Painel Admin
-            </h2>
 
-            <label style="font-size:14px; color:#555;">Usuário</label>
-            <input type="text" name="user" required
-                style="
-                    width:100%;
-                    padding:12px;
-                    margin:6px 0 18px 0;
-                    border-radius:8px;
-                    border:1px solid #ccc;
-                    outline:none;
-                    font-size:14px;
-                "
-            >
-
-            <label style="font-size:14px; color:#555;">Senha</label>
-            <input type="password" name="password" required
-                style="
-                    width:100%;
-                    padding:12px;
-                    margin:6px 0 25px 0;
-                    border-radius:8px;
-                    border:1px solid #ccc;
-                    outline:none;
-                    font-size:14px;
-                "
-            >
-
-            <button type="submit" style="
+    <label style="font-size:14px;color:#555;">Senha</label>
+    <div style="position:relative;">
+        <input id="senha" type="password" name="password" required
+            style="
                 width:100%;
-                padding:12px;
-                border:none;
+                padding:12px 40px 12px 12px;
+                margin:6px 0 22px;
                 border-radius:8px;
-                background:#2a5298;
-                color:white;
-                font-size:15px;
-                font-weight:600;
-                cursor:pointer;
-                transition:0.3s;
-            "
-            onmouseover="this.style.background='#1e3c72'"
-            onmouseout="this.style.background='#2a5298'"
-            >
-                Entrar
-            </button>
-
-            <p style="
-                margin-top:20px;
-                text-align:center;
-                font-size:12px;
-                color:#888;
+                border:1px solid #ccc;
+                font-size:14px;
             ">
-                Acesso restrito
-            </p>
-        </form>
-    </body>
-    </html>
-    """
+        <span onclick="toggleSenha()"
+            style="
+                position:absolute;
+                right:12px;
+                top:50%;
+                transform:translateY(-50%);
+                cursor:pointer;
+                color:#777;
+                font-size:14px;
+            ">👁</span>
+    </div>
+
+    <button type="submit"
+        style="
+            width:100%;
+            padding:12px;
+            border:none;
+            border-radius:8px;
+            background:#2c5364;
+            color:white;
+            font-size:15px;
+            font-weight:600;
+            cursor:pointer;
+        ">
+        Entrar
+    </button>
+</form>
+
+<p style="text-align:center;margin-top:20px;font-size:12px;color:#999;">
+    Acesso restrito
+</p>
+
+</div>
+
+<script>
+function toggleSenha(){
+    const s = document.getElementById("senha");
+    s.type = s.type === "password" ? "text" : "password";
+}
+</script>
+
+</body>
+</html>
+"""
 
 
+@app.post("/admin")
+async def admin_login(request: Request, user: str = Form(...), password: str = Form(...)):
+    if user != "leandro" or password != "14562917776":
+        return HTMLResponse("""
+        <script>
+            alert("Usuário ou senha inválidos");
+            window.location.href = "/login";
+        </script>
+        """)
 
-@app.api_route("/admin", methods=["GET", "POST"], response_class=HTMLResponse)
-async def admin(request: Request, user: str = Form(None), password: str = Form(None)):
-    if request.method == "POST":
-        if user != "leandro" or password != "14562917776":
-            raise HTTPException(status_code=403, detail="Acesso negado")
+    response = RedirectResponse("/admin", status_code=303)
+    response.set_cookie("admin", "logado", httponly=True)
+    return response
+
+
+@app.get("/admin", response_class=HTMLResponse)
+async def admin_panel(request: Request):
+    if request.cookies.get("admin") != "logado":
+        return RedirectResponse("/login")
 
     conn = get_db_connection()
-    cur = conn.cursor()
-
-    cur.execute("SELECT nome, codigo, nota, data FROM resultados ORDER BY id DESC")
-    resultados = cur.fetchall()
-
-    cur.execute("SELECT codigo FROM codigos_validos WHERE usado = FALSE")
-    codigos = cur.fetchall()
-
-    cur.close()
+    cursor = conn.cursor()
+    cursor.execute("SELECT nome, codigo, nota, data FROM resultados ORDER BY data DESC")
+    res = cursor.fetchall()
+    cursor.execute("SELECT codigo FROM codigos_validos WHERE usado = 0")
+    cods = cursor.fetchall()
+    cursor.close()
     conn.close()
 
     return templates.TemplateResponse(
         "admin.html",
-        {"request": request, "resultados": resultados, "codigos": codigos}
+        {"request": request, "resultados": res, "codigos": cods}
     )
 
 
@@ -300,6 +317,7 @@ async def gerar_codigo():
     conn.close()
 
     return RedirectResponse(url="/admin", status_code=303)
+
 
 
 
