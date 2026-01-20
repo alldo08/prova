@@ -11,6 +11,7 @@ import psycopg2.extras
 from fastapi import FastAPI, Request, Form, HTTPException
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
+from fastapi.responses import StreamingResponse
 
 # =============================
 # CONFIGURAÇÃO
@@ -364,14 +365,14 @@ async def resultados_publicos():
     cursor = conn.cursor()
 
     cursor.execute("""
-    SELECT
-        nome,
-        codigo,
-        nota,
-        data
-    FROM resultados
-    ORDER BY nota DESC, data ASC
-""")
+        SELECT
+            nome,
+            codigo,
+            nota,
+            TO_CHAR(data, 'DD/MM/YYYY') AS data
+        FROM resultados
+        ORDER BY nota DESC, data ASC
+    """)
 
     dados = cursor.fetchall()
 
@@ -379,13 +380,13 @@ async def resultados_publicos():
     conn.close()
 
     linhas = ""
-    for nome, acertos, total, data in dados:
+    for nome, codigo, nota, data in dados:
         linhas += f"""
         <tr>
-            <td>{nome}</td>
-            <td>{acertos}</td>
-            <td>{total}</td>
-            <td>{data.strftime('%d/%m/%Y')}</td>
+            <td style="padding:10px;border-bottom:1px solid #eee">{nome}</td>
+            <td style="border-bottom:1px solid #eee">{codigo}</td>
+            <td style="border-bottom:1px solid #eee;font-weight:bold">{nota}</td>
+            <td style="border-bottom:1px solid #eee">{data}</td>
         </tr>
         """
 
@@ -424,8 +425,8 @@ async def resultados_publicos():
             ">
                 <tr style="background:#2a5298;color:white">
                     <th style="padding:12px">Nome</th>
-                    <th>Acertos</th>
-                    <th>Total</th>
+                    <th>Código</th>
+                    <th>Nota</th>
                     <th>Data</th>
                 </tr>
                 {linhas}
@@ -436,6 +437,7 @@ async def resultados_publicos():
     </body>
     </html>
     """
+
 
 
 
