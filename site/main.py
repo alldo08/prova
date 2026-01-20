@@ -173,3 +173,4 @@ async def gerar_codigo():
     return RedirectResponse(url="/admin", status_code=303)
 
 
+
