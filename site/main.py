@@ -11,7 +11,8 @@ from fastapi.templating import Jinja2Templates
 
 # CONFIGURAÇÃO DO SUPABASE (Substituí o sqlite3 por psycopg2)
 # Substituí [provasanter] pela senha que você forneceu no URI
-DATABASE_URL = "postgresql://postgres.cemkjzuumwucitxgoeem:provasanter@aws-0-sa-east-1.pooler.supabase.com:5432/postgres"app = FastAPI()
+DATABASE_URL = "postgresql://postgres.cemkjzuumwucitxgoeem:provasanter@aws-0-sa-east-1.pooler.supabase.com:5432/postgres"
+app = FastAPI()
 templates = Jinja2Templates(directory="templates")
 timezone_br = pytz.timezone('America/Sao_Paulo')
 
@@ -170,3 +171,4 @@ async def gerar_codigo():
     conn.close()
 
     return RedirectResponse(url="/admin", status_code=303)
+
