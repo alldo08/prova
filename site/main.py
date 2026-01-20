@@ -365,14 +365,16 @@ async def resultados_publicos():
     cursor = conn.cursor()
 
     cursor.execute("""
-    SELECT
-        nome,
-        codigo,
-        nota,
-        TO_CHAR(data::date, 'DD/MM/YYYY') AS data
-    FROM resultados
-    ORDER BY nota DESC, data::date ASC
-""")
+        SELECT
+            nome,
+            codigo,
+            nota,
+            data
+        FROM resultados
+        ORDER BY
+            nota DESC,
+            TO_TIMESTAMP(data, 'DD/MM/YYYY HH24:MI') ASC
+    """)
 
     dados = cursor.fetchall()
 
@@ -381,14 +383,14 @@ async def resultados_publicos():
 
     linhas = ""
     for nome, codigo, nota, data in dados:
-        linhas += f"""
-        <tr>
-            <td style="padding:10px;border-bottom:1px solid #eee">{nome}</td>
-            <td style="border-bottom:1px solid #eee">{codigo}</td>
-            <td style="border-bottom:1px solid #eee;font-weight:bold">{nota}</td>
-            <td style="border-bottom:1px solid #eee">{data}</td>
-        </tr>
-        """
+    linhas += f"""
+    <tr>
+        <td>{nome}</td>
+        <td>{codigo}</td>
+        <td>{nota}</td>
+        <td>{data}</td>
+    </tr>
+    """
 
     return f"""
     <!DOCTYPE html>
@@ -437,6 +439,7 @@ async def resultados_publicos():
     </body>
     </html>
     """
+
 
 
 
