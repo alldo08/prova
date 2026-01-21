@@ -1,3 +1,5 @@
+
+
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
@@ -180,6 +182,18 @@
             }
         };
     </script>
+    <script>
+    const form = document.querySelector('form');
+    const submitBtn = document.querySelector('button[type="submit"]');
+
+    form.onsubmit = () => {
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = "Processando Respostas...";
+        submitBtn.style.backgroundColor = "#95a5a6";
+    };
+    </script>
+    
 </body>
 
 </html>
+
