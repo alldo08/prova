@@ -447,6 +447,9 @@ async def resultados_publicos():
     """
 
 
+@app.get("/health-check")
+async def health_check():
+    return {"status": "still_alive"}
 
 
 
