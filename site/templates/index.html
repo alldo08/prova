@@ -19,7 +19,35 @@
     </style>
 </head>
 <body>
-
+    <a href="/login" class="btn-admin">Administrador</a>
+    
+    <style>
+        .btn-admin {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background-color: #2c3e50; /* Cor azul escuro profissional */
+            color: white;
+            padding: 10px 20px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-family: sans-serif;
+            font-size: 14px;
+            font-weight: bold;
+            transition: background 0.3s ease;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            z-index: 1000; /* Garante que fique acima de tudo */
+        }
+    
+        .btn-admin:hover {
+            background-color: #34495e;
+            box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+        }
+    </style>
+    
+    
+    
+    
     <div id="erro-container" class="error-msg">
         {% if erro %}{{ erro }}{% endif %}
     </div>
@@ -153,4 +181,5 @@
         };
     </script>
 </body>
+
 </html>
