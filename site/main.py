@@ -91,7 +91,12 @@ PERGUNTAS = [
     {"id": 17, "texto": "O paciente é deitado em decúbito dorsal (barriga p/ cima) numa maca inclinada, com os pés mais inclinados que a cabeça p/ quando a PA estiver baixa. Essa manobra se chama:", "opcoes": ["Manobra dorsal", "Trendelenburg", "Albert Schweitzer", "Pittsburg"], "correta": "Trendelenburg"},
     {"id": 18, "texto": "Para a reanimação cardíaca, quantas contrações torácicas são necessárias p/ frequência cardíaca (cardiovascular):", "opcoes": ["De 90 a 110 por minuto.", "De 100 a 120 por minuto.", "De 150 a 180 por minuto.", "De 60 a 80 por minuto."], "correta": "De 100 a 120 por minuto."},
     {"id": 19, "texto": "Diante de um idoso chorando, escolha a opção mais correta:", "opcoes": ["Distrair o idoso.", "Ouvi-lo e acolhê-lo.", "Ignorar até passar.", "Repreendê-lo."], "correta": "Ouvi-lo e acolhê-lo."},
-    {"id": 20, "texto": "Diante de um idoso agressivo, qual a alternativa correta:", "opcoes": ["Manter distância.", "Buscar entender a causa.", "Pedir substituição do plantão.", "Responder igual para impor limites."], "correta": "Buscar entender a causa."}
+    {"id": 20, "texto": "Diante de um idoso agressivo, qual a alternativa correta:", "opcoes": ["Manter distância.", "Buscar entender a causa.", "Acalmar o idoso.", "Todas as alternativas."], "correta": "Todas as alternativas."},
+    {"id": 21, "texto": "Sobre o uso do Oxímetro qual o nível certo de percentagem p/ o paciente:", "opcoes": ["A-De 92 a 100", "B-De 90 a 94", "C- De 95 a 97", "D-A letra 'a' e 'b' estão corretas."], "correta": "D-A letra 'a' e 'b' estão corretas."},
+    {"id": 22, "texto": "Em caso de queda de saturação o que você deve fazer e qual a porcentagem de saturação você deve agir imediatamente?", "opcoes": ["94 de saturação ligar p/ família", "92 de saturação entrar em contato c/ responsável técnico e ligar p/ família.", "91 de sat. entrar em contato c/ a empresa, família e o SAMU.", "89 de saturação. Verificar c/ a família se o paciente é DPOC ou se possui alguma doença pulmonar, entrar em contato c/ a empresa e aguardar as orientações."], "correta": "89 de saturação. Verificar c/ a família se o paciente é DPOC ou se possui alguma doença pulmonar, entrar em contato c/ a empresa e aguardar as orientações."},
+    {"id": 23, "texto": "Paciente está tendo uma hipoglicemia o que você pode ofertar p/ que o paciente recupere a sua glicose:", "opcoes": ["A-Água c/ açúcar", "B-Fruta inteira", "C-Mel", "D-A C e a B estão corretas."], "correta": " C-Mel"},
+    {"id": 24, "texto": "Para um atendimento com segurança:", "opcoes": ["Você deve manter as unhas cortadas, retirar os adornos, fazer uso de touca e se precisar máscara. Porque esses itens fazem parte do atendimento com segurança?", "Pois o paciente pode arrancar num momento de agressividade do paciente.", "Para a proteção do paciente não é utilizado adornos pois trazem consigo contaminações. A touca para a própria segurança e transparece higiene.", "Não é ético nem higiênico usar brincos e anéis pois coloca a segurança do paciente em risco."], "correta": "Para a proteção do paciente não é utilizado adornos pois trazem consigo contaminações. A touca para a própria segurança e transparece higiene."},
+    {"id": 25, "texto": "Porque os responsáveis pelos idosos contratam uma empresa de cuidadoria esperando ter um cuidado de excelência dos seus 'entes':", "opcoes": ["Porque precisam trabalhar p/ levar o sustento.", "Porque amam seus entes e precisam de uma pessoa para não deixá-los sozinhos.", "Porque o abandono do idoso é crime conforme previsto no artigo 133 do Cód. Penal (abandono de incapaz) com pena entre 2 a 5 anos de reclusão.", "Todas as alternativas acima estão corretas."], "correta": "Todas as alternativas acima estão corretas."}
 ]
 
 # =============================
@@ -440,6 +445,7 @@ async def resultados_publicos():
     </body>
     </html>
     """
+
 
 
 
