@@ -70,12 +70,39 @@
             <strong>Boa Sorte!</strong>
             <br>
             <strong>SANTER SAÚDE.</strong>
-        </p>        
+        </p>
+        <div class="container">
+    <h1>Resultado da Prova</h1>
+    <p>Olá, {{ nome }}!</p>
+    <p>Você acertou {{ acertos }} de {{ total }} perguntas.</p>
+
+    <p class="message">
+        Tendo em vista que abandono de incapaz não se penaliza por familiar...
+        <br><br>
+        <strong>Boa Sorte!</strong><br>
+        <strong>SANTOR SAÚDE.</strong>
+    </p>
+
+    <div style="width: 100%; background: #eee; height: 8px; border-radius: 4px; overflow: hidden; margin-top: 25px;">
+        <div id="barra-progresso" style="width: 100%; background: #3498db; height: 100%; transition: width 30s linear;"></div>
+    </div>
+    <p style="font-size: 12px; color: #7f8c8d; text-align: center; margin-top: 5px;">
+        Voltando para o início em 30 segundos...
+    </p>
+
+</div> <script>
+    window.onload = () => {
+        setTimeout(() => {
+            document.getElementById('barra-progresso').style.width = '0%';
+        }, 100);
+    };
+</script>
         <div class="footer-msg">Você já pode fechar esta aba.</div>
     </div>
 </body>
 
 </html>
+
 
 
 
