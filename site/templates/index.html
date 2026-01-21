@@ -205,6 +205,7 @@
                     timerBox.style.display = 'block';
                     mostrarPasso(1);
                     cronometro = setInterval(atualizarTimer, 1000);
+                    document.querySelector('.btn-admin').style.display = 'none';
                 } else {
                     erroDiv.innerText = "⚠️ " + (data.mensagem || "Código inválido.");
                     erroDiv.style.display = 'block';
@@ -285,6 +286,7 @@
     </script>
 </body>
 </html>
+
 
 
 
