@@ -12,7 +12,14 @@
             padding: 80px 20px 40px 20px; /* Aumentado o padding superior para o botão */
             background-color: #f4f4f9; 
         }
-
+        .questao-container h3 {
+            color: #2c3e50;
+            background: #f8f9fa;
+            padding: 15px;
+            border-left: 5px solid #3498db;
+            border-radius: 4px;
+            margin-top: 0;
+        }
         /* Estilização do Botão Administrador */
         .btn-admin {
             position: absolute;
@@ -208,6 +215,18 @@
 
         function atualizarTimer() {
             timerDisplay.textContent = tempoRestante;
+            
+            // Fica vermelho abaixo de 15 segundos
+            if (tempoRestante <= 15) {
+                timerBox.style.color = "#e74c3c";
+                timerBox.style.borderColor = "#e74c3c";
+                timerBox.style.animation = "pulse 1s infinite";
+            } else {
+                timerBox.style.color = "#27ae60"; // Verde se tiver tempo
+                timerBox.style.borderColor = "#27ae60";
+                timerBox.style.animation = "none";
+            }
+        
             if (tempoRestante <= 0) {
                 proximaQuestao();
             }
@@ -260,3 +279,4 @@
     </script>
 </body>
 </html>
+
