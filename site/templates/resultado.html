@@ -40,15 +40,7 @@
         .total { font-size: 20px; color: #7f8c8d; }
         .message { color: #576574; font-size: 18px; line-height: 1.5; }
         .footer-msg { margin-top: 30px; font-size: 14px; color: #bdc3c7; }
-        .container {
-        background: white;
-        padding: 30px;
-        border-radius: 15px; /* Bordas mais arredondadas */
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08); /* Sombra bem suave */
-        max-width: 600px;
-        margin: 40px auto;
-    }
-    
+           
     
     </style>
 </head>
@@ -71,37 +63,13 @@
             <br>
             <strong>SANTER SAÚDE.</strong>
         </p>
-        <div class="container">
-    <h1>Resultado da Prova</h1>
-    <p>Olá, {{ nome }}!</p>
-    <p>Você acertou {{ acertos }} de {{ total }} perguntas.</p>
-
-    <p class="message">
-        Tendo em vista que abandono de incapaz não se penaliza por familiar...
-        <br><br>
-        <strong>Boa Sorte!</strong><br>
-        <strong>SANTOR SAÚDE.</strong>
-    </p>
-
-    <div style="width: 100%; background: #eee; height: 8px; border-radius: 4px; overflow: hidden; margin-top: 25px;">
-        <div id="barra-progresso" style="width: 100%; background: #3498db; height: 100%; transition: width 30s linear;"></div>
-    </div>
-    <p style="font-size: 12px; color: #7f8c8d; text-align: center; margin-top: 5px;">
-        Voltando para o início em 30 segundos...
-    </p>
-
-</div> <script>
-    window.onload = () => {
-        setTimeout(() => {
-            document.getElementById('barra-progresso').style.width = '0%';
-        }, 100);
-    };
-</script>
+       
         <div class="footer-msg">Você já pode fechar esta aba.</div>
     </div>
 </body>
 
 </html>
+
 
 
 
