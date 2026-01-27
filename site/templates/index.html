@@ -11,22 +11,21 @@
             margin: 0 auto; 
             padding: 80px 20px 40px 20px;
             background-color: #f4f4f9; 
-            /* BLOQUEIO DE SELEÇÃO DE TEXTO */
             -webkit-user-select: none;
             -moz-user-select: none;
             -ms-user-select: none;
             user-select: none;
-            transition: filter 0.2s ease, background-color 0.2s ease;
+            /* Removi o transition para o borrão ser instantâneo */
         }
 
-        /* CLASSE DE BLOQUEIO PARA MOBILE (PRINT/SAÍDA) */
+        /* CLASSE DE BLOQUEIO AGRESSIVA */
         .modo-fraude {
-            filter: blur(50px) brightness(0) grayscale(100%);
+            filter: blur(80px) brightness(0) !important;
             background-color: #000 !important;
             pointer-events: none;
         }
 
-        /* ESCONDE CONTEÚDO NA IMPRESSÃO (PDF) */
+        /* ESCONDE TUDO SE HOUVER TENTATIVA DE IMPRESSÃO */
         @media print {
             body { display: none !important; }
         }
@@ -40,7 +39,6 @@
             margin-top: 0;
         }
         
-        /* AVISO DE SEGURANÇA EM DESTAQUE */
         .aviso-seguranca {
             background-color: #fff3cd;
             color: #856404;
@@ -63,16 +61,10 @@
             text-decoration: none;
             font-size: 13px;
             font-weight: bold;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
             z-index: 9999;
             display: inline-block;
         }
-        .btn-admin:hover {
-            background-color: #34495e;
-            transform: translateY(-2px);
-            box-shadow: 0 6px 12px rgba(0,0,0,0.15);
-        }
+
         .card { 
             background: white; 
             padding: 30px; 
@@ -80,6 +72,7 @@
             box-shadow: 0 4px 15px rgba(0,0,0,0.08); 
             position: relative; 
         }
+
         #timer-box { 
             display: none; 
             position: absolute; 
@@ -92,8 +85,10 @@
             padding: 5px 10px; 
             border-radius: 5px; 
         }
+
         .questao-container { display: none; } 
         .questao-container.active { display: block; } 
+
         .btn-proxima { 
             background: #3498db; 
             color: white; 
@@ -106,7 +101,7 @@
             width: 100%; 
             font-weight: bold;
         }
-        .btn-proxima:hover { background: #2980b9; }
+
         input[type="text"] { 
             width: 100%; 
             padding: 12px; 
@@ -116,6 +111,7 @@
             box-sizing: border-box; 
             font-size: 16px;
         }
+
         label { 
             display: block; 
             margin-bottom: 10px; 
@@ -123,47 +119,34 @@
             padding: 12px; 
             border: 1px solid #eee; 
             border-radius: 5px; 
-            transition: 0.3s; 
         }
-        label:hover { background-color: #f0f7ff; border-color: #3498db; }
+
         input[type="radio"] { margin-right: 10px; transform: scale(1.2); }
     </style>
 </head>
 <body>
 
     <a href="/login" class="btn-admin">Administrador</a>
-                
-    <div id="erro-container" class="error-msg">
-        {% if erro %}{{ erro }}{% endif %}
-    </div>
 
     <div class="card">
         <div style="text-align: center; margin-bottom: 20px;">
             <h1 style="color: #2c3e50; margin-bottom: 5px; letter-spacing: -1px;">SANTER <span style="color: #1abc9c;">SAÚDE</span></h1>
-            <div style="width: 50px; height: 3px; background: #3498db; margin: 0 auto; border-radius: 2px;"></div>
-            <p style="font-size: 12px; color: #7f8c8d; text-transform: uppercase; margin-top: 8px; letter-spacing: 2px;">Excelência em Cuidar</p>
+            <p style="font-size: 12px; color: #7f8c8d; text-transform: uppercase;">Excelência em Cuidar</p>
         </div>
         
         <div id="timer-box"><span id="timer">60</span>s</div>
         
         <form id="quizForm" action="/submit" method="post" onsubmit="marcarComoEnviado()">
+            <input type="hidden" name="fraude" id="input_fraude" value="false">
             
             <div id="step-0" class="questao-container active">
                 <div class="aviso-seguranca">
-                    <strong>🛡️ SISTEMA DE SEGURANÇA ATIVO:</strong><br>
-                    Tentativas de <b>Print Screen</b>, trocar de aba ou minimizar o navegador causarão a <b>anulação automática</b> da prova com nota zero. Mantenha o foco na tela.
+                    <strong>🛡️ SEGURANÇA MÁXIMA:</strong><br>
+                    O sistema bloqueia capturas de tela. Se você tentar tirar print ou sair desta aba, a tela ficará preta e sua prova será <b>zerada na hora</b>.
                 </div>
-
-                <h2 style="margin-top: 0;">Bem-vindo!</h2>
-                <p>Você terá 60 segundos para responder cada pergunta.</p>
-                
-                <label style="border: none; padding: 0; cursor: default;"><b>Seu Nome Completo:</b></label>
-                <input type="text" name="nome" id="nome_input" required placeholder="Digite seu nome...">
-                
-                <label style="border: none; padding: 0; cursor: default;"><b>Código de Acesso:</b></label>
-                <input type="text" name="codigo" id="codigo_input" required placeholder="Digite o código da prova..." style="text-transform: uppercase;">
-                
-                <button type="button" id="btn-iniciar" class="btn-proxima" onclick="iniciarQuiz()">Começar Prova</button>
+                <input type="text" name="nome" id="nome_input" required placeholder="Nome Completo">
+                <input type="text" name="codigo" id="codigo_input" required placeholder="Código de Acesso" style="text-transform: uppercase;">
+                <button type="button" class="btn-proxima" onclick="iniciarQuiz()">Começar Prova</button>
             </div>
 
             {% for p in perguntas %}
@@ -175,7 +158,6 @@
                     <input type="radio" name="pergunta_{{ p.id }}" value="{{ opcao }}"> {{ opcao }}
                 </label>
                 {% endfor %}
-                
                 {% if loop.last %}
                     <button type="button" id="btn-finalizar" class="btn-proxima" style="background: #27ae60;" onclick="finalizar()">Finalizar Prova</button>
                 {% else %}
@@ -193,8 +175,6 @@
         let tempoRestante = 60;
         let cronometro;
         const totalPerguntas = {{ perguntas|length }};
-        const timerDisplay = document.getElementById('timer');
-        const timerBox = document.getElementById('timer-box');
         const quizForm = document.getElementById('quizForm');
 
         function marcarComoEnviado() { enviandoFormulario = true; }
@@ -202,100 +182,59 @@
         function dispararFraude(motivo) {
             if (!provaIniciada || enviandoFormulario) return;
             enviandoFormulario = true; 
-
-            // Aplica efeito visual de bloqueio antes do envio
-            document.body.classList.add('modo-fraude');
             
-            let inputFraude = document.getElementById('input_fraude');
-            if (!inputFraude) {
-                inputFraude = document.createElement('input');
-                inputFraude.type = 'hidden';
-                inputFraude.name = 'fraude';
-                inputFraude.id = 'input_fraude';
-                quizForm.appendChild(inputFraude);
-            }
-            inputFraude.value = "true";
+            // 1. Aplica o blackout total IMEDIATO
+            document.body.classList.add('modo-fraude');
+            document.getElementById('input_fraude').value = "true";
 
-            alert("🚨 VIOLAÇÃO DETECTADA: " + motivo + "\nSua prova foi encerrada com NOTA ZERO.");
+            // 2. Envia o formulário sem dar tempo ao aluno
+            console.log("Fraude detectada: " + motivo);
             quizForm.submit();
+            alert("🚨 VIOLAÇÃO: Sua prova foi anulada por tentativa de " + motivo);
         }
 
-        // --- PROTEÇÃO MOBILE (O "PULO DO GATO") ---
-        
-        // No celular, o sistema operacional "rouba" o foco para tirar print ou abrir notificações
-        window.addEventListener('blur', () => {
+        // GATILHO DE PRINT MOBILE (Super veloz)
+        window.onblur = function() {
             if (provaIniciada && !enviandoFormulario) {
-                // Borra a tela imediatamente para o print sair inutilizado
+                // Borra tudo no milissegundo em que o celular pede o foco para o print
                 document.body.classList.add('modo-fraude');
-                // Pequeno delay para garantir que o blackout aconteça antes do alerta/envio
-                setTimeout(() => {
-                    dispararFraude("Perda de foco detectada (Possível Print ou saída)");
-                }, 300);
+                dispararFraude("Print ou Saída de Tela");
             }
-        });
+        };
 
-        // Se o foco voltar e não foi fraude (ex: aviso do sistema rápido), removemos o borrão
-        window.addEventListener('focus', () => {
-            if (!enviandoFormulario) {
-                document.body.classList.remove('modo-fraude');
-            }
-        });
-
-        // Detecta mudança de visibilidade (Troca de aba)
+        // Bloqueios adicionais
         document.addEventListener("visibilitychange", () => {
-            if (document.hidden && provaIniciada && !enviandoFormulario) {
-                dispararFraude("Saída da página detectada");
-            }
+            if (document.hidden && provaIniciada) dispararFraude("Troca de aba");
         });
 
-        // Bloqueio de teclado e atalhos
-        document.addEventListener('contextmenu', e => { if(provaIniciada) e.preventDefault(); });
         document.addEventListener('keydown', e => {
-            if (!provaIniciada || enviandoFormulario) return;
-            if (e.ctrlKey && ['c', 'u', 'p', 's'].includes(e.key.toLowerCase())) {
+            if (provaIniciada && (e.key === 'PrintScreen' || (e.ctrlKey && e.key === 'p'))) {
                 e.preventDefault();
-                if(e.key.toLowerCase() !== 'c') dispararFraude("Atalho proibido");
-            }
-            // Bloqueia F12 e PrintScreen
-            if (e.key === 'F12' || e.key === 'PrintScreen') {
-                e.preventDefault();
-                dispararFraude("Tecla de sistema detectada");
+                dispararFraude("Captura de tela");
             }
         });
 
-        // --- LÓGICA DO QUIZ ---
         async function iniciarQuiz() {
             const nome = document.getElementById('nome_input').value.trim();
             const codigo = document.getElementById('codigo_input').value.trim().toUpperCase();
-            if (!nome || !codigo) return alert("Preencha todos os campos.");
-
-            const btn = document.getElementById('btn-iniciar');
-            btn.disabled = true;
-            btn.innerText = "Verificando...";
+            if (!nome || !codigo) return alert("Preencha os campos.");
 
             try {
                 const response = await fetch(`/verificar_codigo/${codigo}`);
                 const data = await response.json();
                 if (data.status === "sucesso") {
                     provaIniciada = true; 
-                    timerBox.style.display = 'block';
+                    document.getElementById('timer-box').style.display = 'block';
                     mostrarPasso(1); 
                     cronometro = setInterval(atualizarTimer, 1000);
-                    document.querySelector('.btn-admin').style.display = 'none';
                 } else {
                     alert(data.mensagem);
-                    btn.disabled = false;
-                    btn.innerText = "Começar Prova";
                 }
-            } catch (error) {
-                alert("Erro de conexão.");
-                btn.disabled = false;
-            }
+            } catch (e) { alert("Erro de conexão."); }
         }
 
         function atualizarTimer() {
-            timerDisplay.textContent = tempoRestante;
-            if (tempoRestante <= 15) timerBox.style.color = "#e74c3c";
+            document.getElementById('timer').textContent = tempoRestante;
             if (tempoRestante <= 0) proximaQuestao();
             tempoRestante--;
         }
@@ -310,18 +249,14 @@
 
         function mostrarPasso(passo) {
             document.querySelectorAll('.questao-container').forEach(div => div.classList.remove('active'));
-            const proximoCard = document.getElementById(`step-${passo}`);
-            if (proximoCard) {
-                proximoCard.classList.add('active');
-                questaoAtual = passo;
-            }
+            document.getElementById(`step-${passo}`).classList.add('active');
+            questaoAtual = passo;
         }
 
         function finalizar() {
             enviandoFormulario = true; 
             clearInterval(cronometro);
-            let inputFraude = document.getElementById('input_fraude');
-            if (inputFraude) inputFraude.value = "false"; 
+            document.getElementById('input_fraude').value = "false";
             quizForm.submit();
         }
     </script>
