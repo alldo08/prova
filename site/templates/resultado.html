@@ -69,6 +69,23 @@
         <p style="font-size: 12px; color: #7f8c8d; text-align: center; margin-top: 5px;">
         Voltando para o início em 30 segundos...
         </p>
+    
+    <div class="resultado-box">
+        {% if fraude %}
+            <div style="background: #ffdbdb; color: #a00; border: 2px solid #a00; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+                <h2 style="margin-top:0;">🚨 PROVA ANULADA 🚨</h2>
+                <p>Foi detectada uma tentativa de fraude (PrintScreen ou saída da aba).</p>
+                <p>Sua nota foi registrada como <strong>ZERO</strong>.</p>
+            </div>
+        {% else %}
+            <h2>Parabéns, {{ nome }}!</h2>
+            <p>Você concluiu a prova com sucesso.</p>
+        {% endif %}
+    
+        <p style="font-size: 24px;">Nota: <strong>{{ acertos }}</strong> / {{ total }}</p>
+        
+        <a href="/" class="btn">Sair</a>
+
 
 </div> <script>
     window.onload = () => {
@@ -82,6 +99,7 @@
 </body>
 
 </html>
+
 
 
 
