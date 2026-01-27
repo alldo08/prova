@@ -119,17 +119,6 @@
         label:hover { background-color: #f0f7ff; border-color: #3498db; }
         
         input[type="radio"] { margin-right: 10px; transform: scale(1.2); }
-
-        body {
-                -webkit-user-select: none;
-                -moz-user-select: none;
-                -ms-user-select: none;
-                user-select: none;
-            }
-            /* Esconde o conteúdo se tentarem imprimir para PDF */
-            @media print {
-                body { display: none !important; }
-            }
     </style>
 </head>
 <body>
@@ -307,69 +296,9 @@
                 erroDiv.style.display = 'block';
             }
         };
-
-
-
-        function aplicarPunicao(motivo) {
-                const form = document.querySelector('form');
-                
-                // Garante que o formulário tenha dados para salvar o culpado
-                if (!form.nome.value) form.nome.value = "Tentativa de Fraude";
-                if (!form.codigo.value) form.codigo.value = "FRAUDE";
-        
-                // Cria o campo 'fraude' dinamicamente para enviar ao Python
-                let inputFraude = document.getElementById('input_fraude');
-                if (!inputFraude) {
-                    inputFraude = document.createElement('input');
-                    inputFraude.type = 'hidden';
-                    inputFraude.name = 'fraude';
-                    inputFraude.id = 'input_fraude';
-                    form.appendChild(inputFraude);
-                }
-                inputFraude.value = "true";
-        
-                alert("⚠️ VIOLAÇÃO DE SEGURANÇA: " + motivo + "\nSua prova foi encerrada com NOTA ZERO.");
-                form.submit();
-            }
-        
-            // 1. Bloqueia Botão Direito
-            document.addEventListener('contextmenu', event => event.preventDefault());
-        
-            // 2. Bloqueia Teclas Proibidas
-            document.addEventListener('keydown', function(e) {
-                // Bloqueia Ctrl+C, Ctrl+V, Ctrl+U (Código fonte), Ctrl+S (Salvar)
-                if (e.ctrlKey && (e.key === 'c' || e.key === 'v' || e.key === 'u' || e.key === 's')) {
-                    e.preventDefault();
-                    if(e.key === 'u') aplicarPunicao("Tentativa de ver código fonte");
-                    return false;
-                }
-                // Bloqueia F12 e Ctrl+Shift+I (Inspecionar)
-                if (e.key === "F12" || (e.ctrlKey && e.shiftKey && e.key === "I")) {
-                    e.preventDefault();
-                    aplicarPunicao("Tentativa de inspecionar elementos");
-                }
-            });
-        
-            // 3. Detecta PrintScreen e limpa área de transferência
-            window.addEventListener('keyup', (e) => {
-                if (e.key === 'PrintScreen') {
-                    navigator.clipboard.writeText('Conteúdo Protegido');
-                    aplicarPunicao("Captura de tela detectada");
-                }
-            });
-        
-            // 4. Detecta saída da aba (Alt+Tab ou minimizar)
-            document.addEventListener("visibilitychange", () => {
-                if (document.visibilityState === 'hidden') {
-                    aplicarPunicao("Saída da página da prova (Troca de aba/janela)");
-                }
-            });
-
-        
     </script>
 </body>
 </html>
-
 
 
 
