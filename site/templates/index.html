@@ -15,17 +15,26 @@
             -moz-user-select: none;
             -ms-user-select: none;
             user-select: none;
-            /* Removi o transition para o borrão ser instantâneo */
+        }
+
+        /* CAMADA DE RUÍDO DE FUNDO */
+        .ruido-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            background-image: url('https://www.transparenttextures.com/patterns/stardust.png');
+            opacity: 0.05;
+            z-index: 9998;
+            pointer-events: none;
+            display: none; /* Só aparece ao começar */
         }
 
         /* CLASSE DE BLOQUEIO AGRESSIVA */
         .modo-fraude {
             filter: blur(80px) brightness(0) !important;
             background-color: #000 !important;
-            pointer-events: none;
+            pointer-events: none !important;
         }
 
-        /* ESCONDE TUDO SE HOUVER TENTATIVA DE IMPRESSÃO */
         @media print {
             body { display: none !important; }
         }
@@ -71,6 +80,7 @@
             border-radius: 12px; 
             box-shadow: 0 4px 15px rgba(0,0,0,0.08); 
             position: relative; 
+            z-index: 2;
         }
 
         #timer-box { 
@@ -125,6 +135,8 @@
     </style>
 </head>
 <body>
+
+    <div id="ruido" class="ruido-overlay"></div>
 
     <a href="/login" class="btn-admin">Administrador</a>
 
@@ -183,28 +195,23 @@
             if (!provaIniciada || enviandoFormulario) return;
             enviandoFormulario = true; 
             
-            // 1. Aplica o blackout total IMEDIATO
             document.body.classList.add('modo-fraude');
             document.getElementById('input_fraude').value = "true";
 
-            // 2. Envia o formulário sem dar tempo ao aluno
-            console.log("Fraude detectada: " + motivo);
             quizForm.submit();
             alert("🚨 VIOLAÇÃO: Sua prova foi anulada por tentativa de " + motivo);
         }
 
-        // GATILHO DE PRINT MOBILE (Super veloz)
+        // GATILHO DE FOCO (Print/Saída)
         window.onblur = function() {
             if (provaIniciada && !enviandoFormulario) {
-                // Borra tudo no milissegundo em que o celular pede o foco para o print
-                document.body.classList.add('modo-fraude');
                 dispararFraude("Print ou Saída de Tela");
             }
         };
 
         // Bloqueios adicionais
         document.addEventListener("visibilitychange", () => {
-            if (document.hidden && provaIniciada) dispararFraude("Troca de aba");
+            if (document.hidden && provaIniciada && !enviandoFormulario) dispararFraude("Troca de aba");
         });
 
         document.addEventListener('keydown', e => {
@@ -224,6 +231,7 @@
                 const data = await response.json();
                 if (data.status === "sucesso") {
                     provaIniciada = true; 
+                    document.getElementById('ruido').style.display = 'block';
                     document.getElementById('timer-box').style.display = 'block';
                     mostrarPasso(1); 
                     cronometro = setInterval(atualizarTimer, 1000);
