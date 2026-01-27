@@ -311,26 +311,38 @@
         }
 
         function finalizar() {
-            const btnFinalizar = document.getElementById('btn-finalizar');
-            clearInterval(cronometro);
-            
-            // ESSA ORDEM É IMPORTANTE: Primeiro marcamos como oficial, depois enviamos
+            // 1. Desativa imediatamente os monitores de fraude e o alerta de saída
             enviandoFormulario = true; 
             window.onbeforeunload = null; 
+            clearInterval(cronometro);
+        
+            const btnFinalizar = document.getElementById('btn-finalizar');
             
+            // 2. Limpeza de segurança: garante que o campo 'fraude' não vá como true
+            // se o aluno terminou a prova corretamente.
+            let inputFraude = document.getElementById('input_fraude');
+            if (inputFraude) {
+                inputFraude.value = "false"; 
+            }
+        
+            // 3. Feedback visual no botão
             if(btnFinalizar) {
                 btnFinalizar.disabled = true;
                 btnFinalizar.innerText = "Enviando Prova...";
+                btnFinalizar.style.background = "#95a5a6";
             }
             
+            // 4. Envio oficial
+            console.log("Enviando formulário sem fraude...");
             quizForm.submit();
         }
-
+        
+        // O restante permanece igual, garantindo a proteção:
         window.onbeforeunload = function() { 
             if(provaIniciada && !enviandoFormulario) return "Sair agora perderá seu progresso."; 
         };
-
-        // Ping de atividade
+        
+        // Ping de atividade apenas enquanto a prova ocorre
         setInterval(async () => {
             if (provaIniciada && !enviandoFormulario) {
                 try { await fetch('/health-check'); } catch (e) {}
@@ -339,4 +351,5 @@
     </script>
 </body>
 </html>
+
 
