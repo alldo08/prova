@@ -12,7 +12,7 @@ from fastapi import FastAPI, Request, Form, HTTPException
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.responses import StreamingResponse
-
+from fastapi import Response
 # =============================
 # CONFIGURAÇÃO
 # =============================
@@ -28,6 +28,14 @@ templates = Jinja2Templates(directory="templates")
 # =============================
 # BANCO DE DADOS
 # =============================
+@app.middleware("http")
+async def add_no_cache_headers(request: Request, call_next):
+    response = await call_next(request)
+    # Impede o navegador de salvar as questões no histórico/cache
+    response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+    response.headers["Pragma"] = "no-cache"
+    response.headers["Expires"] = "0"
+    return response
 
 def get_db_connection():
     return psycopg2.connect(DATABASE_URL)
@@ -105,21 +113,17 @@ PERGUNTAS = [
 
 @app.get("/verificar_codigo/{codigo}")
 async def verificar_codigo(codigo: str):
-    codigo = codigo.strip().upper()
     conn = get_db_connection()
     cur = conn.cursor()
-
-    cur.execute("SELECT usado FROM codigos_validos WHERE codigo = %s", (codigo,))
-    row = cur.fetchone()
-
-    cur.close()
-    conn.close()
-
-    if row is None:
-        return {"status": "erro", "mensagem": "Código inexistente"}
-    if row[0]:
-        return {"status": "erro", "mensagem": "Código já utilizado"}
-
+    # Verifica se o código existe e NÃO foi usado
+    cur.execute("SELECT usado FROM codigos_validos WHERE codigo = %s", (codigo.upper(),))
+    result = cur.fetchone()
+    
+    if result is None:
+        return {"status": "erro", "mensagem": "Código inexistente."}
+    if result[0] is True:
+        return {"status": "erro", "mensagem": "Este código já foi utilizado."}
+    
     return {"status": "sucesso"}
 
 
@@ -467,6 +471,7 @@ async def resultados_publicos():
 @app.get("/health-check")
 async def health_check():
     return {"status": "still_alive"}
+
 
 
 
