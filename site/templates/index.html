@@ -17,7 +17,6 @@
             user-select: none;
         }
 
-        /* CAMADA DE RUÍDO DE FUNDO */
         .ruido-overlay {
             position: fixed;
             top: 0; left: 0; width: 100vw; height: 100vh;
@@ -25,10 +24,10 @@
             opacity: 0.05;
             z-index: 9998;
             pointer-events: none;
-            display: none; /* Só aparece ao começar */
+            display: none;
         }
 
-        /* CLASSE DE BLOQUEIO AGRESSIVA */
+        /* BLOQUEIO IMEDIATO */
         .modo-fraude {
             filter: blur(80px) brightness(0) !important;
             background-color: #000 !important;
@@ -113,22 +112,14 @@
         }
 
         input[type="text"] { 
-            width: 100%; 
-            padding: 12px; 
-            margin-bottom: 20px; 
-            border: 1px solid #ddd; 
-            border-radius: 5px; 
-            box-sizing: border-box; 
-            font-size: 16px;
+            width: 100%; padding: 12px; margin-bottom: 20px; 
+            border: 1px solid #ddd; border-radius: 5px; 
+            box-sizing: border-box; font-size: 16px;
         }
 
         label { 
-            display: block; 
-            margin-bottom: 10px; 
-            cursor: pointer; 
-            padding: 12px; 
-            border: 1px solid #eee; 
-            border-radius: 5px; 
+            display: block; margin-bottom: 10px; cursor: pointer; 
+            padding: 12px; border: 1px solid #eee; border-radius: 5px; 
         }
 
         input[type="radio"] { margin-right: 10px; transform: scale(1.2); }
@@ -137,7 +128,6 @@
 <body>
 
     <div id="ruido" class="ruido-overlay"></div>
-
     <a href="/login" class="btn-admin">Administrador</a>
 
     <div class="card">
@@ -166,12 +156,10 @@
                 <div style="color: #666; font-size: 14px; margin-bottom: 10px;">Questão {{ loop.index }} de {{ perguntas|length }}</div>
                 <h3>{{ p.texto }}</h3>
                 {% for opcao in p.opcoes %}
-                <label>
-                    <input type="radio" name="pergunta_{{ p.id }}" value="{{ opcao }}"> {{ opcao }}
-                </label>
+                <label><input type="radio" name="pergunta_{{ p.id }}" value="{{ opcao }}"> {{ opcao }}</label>
                 {% endfor %}
                 {% if loop.last %}
-                    <button type="button" id="btn-finalizar" class="btn-proxima" style="background: #27ae60;" onclick="finalizar()">Finalizar Prova</button>
+                    <button type="button" class="btn-finalizar" style="background: #27ae60;" class="btn-proxima" onclick="finalizar()">Finalizar Prova</button>
                 {% else %}
                     <button type="button" class="btn-proxima" onclick="proximaQuestao()">Próxima Pergunta</button>
                 {% endif %}
@@ -195,29 +183,40 @@
             if (!provaIniciada || enviandoFormulario) return;
             enviandoFormulario = true; 
             
-            document.body.classList.add('modo-fraude');
+            document.body.classList.add('modo-fraude'); // BLACKOUT IMEDIATO
             document.getElementById('input_fraude').value = "true";
 
             quizForm.submit();
             alert("🚨 VIOLAÇÃO: Sua prova foi anulada por tentativa de " + motivo);
         }
 
-        // GATILHO DE FOCO (Print/Saída)
+        // DETECÇÃO DE PERDA DE FOCO (Sair da aba ou Print do Sistema)
         window.onblur = function() {
             if (provaIniciada && !enviandoFormulario) {
                 dispararFraude("Print ou Saída de Tela");
             }
         };
 
-        // Bloqueios adicionais
         document.addEventListener("visibilitychange", () => {
             if (document.hidden && provaIniciada && !enviandoFormulario) dispararFraude("Troca de aba");
         });
 
+        // DETECÇÃO REFORÇADA DE BOTÃO PRINT E ATALHOS
+        document.addEventListener('keyup', e => {
+            if (provaIniciada && (e.key === 'PrintScreen' || e.keyCode === 44)) {
+                dispararFraude("Botão Print Screen");
+            }
+        });
+
         document.addEventListener('keydown', e => {
-            if (provaIniciada && (e.key === 'PrintScreen' || (e.ctrlKey && e.key === 'p'))) {
-                e.preventDefault();
-                dispararFraude("Captura de tela");
+            if (provaIniciada) {
+                // Bloqueia PrintScreen, Ctrl+P, Ctrl+S, F12
+                if (e.key === 'PrintScreen' || e.keyCode === 44 || 
+                   (e.ctrlKey && (e.key === 'p' || e.key === 's')) || 
+                    e.key === 'F12') {
+                    e.preventDefault();
+                    dispararFraude("Atalho de captura/comando proibido");
+                }
             }
         });
 
@@ -235,9 +234,7 @@
                     document.getElementById('timer-box').style.display = 'block';
                     mostrarPasso(1); 
                     cronometro = setInterval(atualizarTimer, 1000);
-                } else {
-                    alert(data.mensagem);
-                }
+                } else { alert(data.mensagem); }
             } catch (e) { alert("Erro de conexão."); }
         }
 
