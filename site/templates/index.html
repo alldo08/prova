@@ -15,118 +15,86 @@
             -moz-user-select: none;
             -ms-user-select: none;
             user-select: none;
-            /* Removi o transition para o borrão ser instantâneo */
+            overflow-x: hidden;
         }
 
-        /* CLASSE DE BLOQUEIO AGRESSIVA */
+        /* --- CAMADA DE RUÍDO (ANTI-PRINT) --- */
+        .ruido-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            /* Usando um padrão de ruído sutil */
+            background-image: url('https://www.transparenttextures.com/patterns/stardust.png');
+            opacity: 0.05;
+            z-index: 9999;
+            pointer-events: none;
+            animation: moverRuido 0.2s infinite linear;
+            display: none; /* Só aparece quando a prova começa */
+        }
+
+        @keyframes moverRuido {
+            0% { transform: translate(0,0); }
+            50% { transform: translate(-5px, 5px); }
+            100% { transform: translate(5px, -5px); }
+        }
+
+        /* --- MARCA D'ÁGUA DINÂMICA --- */
+        #marca-dagua {
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            display: flex; flex-wrap: wrap; justify-content: space-around;
+            align-content: space-around; z-index: 1; pointer-events: none;
+            opacity: 0.08; user-select: none; display: none;
+        }
+
+        .nome-marca {
+            font-size: 20px; font-weight: bold; color: #000;
+            transform: rotate(-30deg); padding: 50px; white-space: nowrap;
+        }
+
         .modo-fraude {
             filter: blur(80px) brightness(0) !important;
             background-color: #000 !important;
             pointer-events: none;
         }
 
-        /* ESCONDE TUDO SE HOUVER TENTATIVA DE IMPRESSÃO */
-        @media print {
-            body { display: none !important; }
+        @media print { body { display: none !important; } }
+
+        .card { 
+            background: white; padding: 30px; border-radius: 12px; 
+            box-shadow: 0 4px 15px rgba(0,0,0,0.08); position: relative; z-index: 2;
         }
 
         .questao-container h3 {
-            color: #2c3e50;
-            background: #f8f9fa;
-            padding: 15px;
-            border-left: 5px solid #3498db;
-            border-radius: 4px;
-            margin-top: 0;
+            color: #2c3e50; background: #f8f9fa; padding: 15px;
+            border-left: 5px solid #3498db; border-radius: 4px; margin-top: 0;
         }
         
-        .aviso-seguranca {
-            background-color: #fff3cd;
-            color: #856404;
-            padding: 15px;
-            border: 1px solid #ffeeba;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            font-size: 14px;
-            line-height: 1.4;
-        }
-
-        .btn-admin {
-            position: absolute;
-            top: 20px;
-            left: 20px;
-            background-color: #2c3e50;
-            color: white !important;
-            padding: 10px 18px;
-            border-radius: 8px;
-            text-decoration: none;
-            font-size: 13px;
-            font-weight: bold;
-            z-index: 9999;
-            display: inline-block;
-        }
-
-        .card { 
-            background: white; 
-            padding: 30px; 
-            border-radius: 12px; 
-            box-shadow: 0 4px 15px rgba(0,0,0,0.08); 
-            position: relative; 
-        }
-
         #timer-box { 
-            display: none; 
-            position: absolute; 
-            top: 20px; 
-            right: 20px; 
-            font-size: 20px; 
-            font-weight: bold; 
-            color: #27ae60; 
-            border: 2px solid #27ae60; 
-            padding: 5px 10px; 
-            border-radius: 5px; 
+            display: none; position: absolute; top: 20px; right: 20px; 
+            font-size: 20px; font-weight: bold; color: #27ae60; 
+            border: 2px solid #27ae60; padding: 5px 10px; border-radius: 5px; 
         }
 
         .questao-container { display: none; } 
         .questao-container.active { display: block; } 
 
         .btn-proxima { 
-            background: #3498db; 
-            color: white; 
-            border: none; 
-            padding: 12px 25px; 
-            border-radius: 5px; 
-            cursor: pointer; 
-            font-size: 16px; 
-            margin-top: 20px; 
-            width: 100%; 
-            font-weight: bold;
+            background: #3498db; color: white; border: none; padding: 12px 25px; 
+            border-radius: 5px; cursor: pointer; font-size: 16px; margin-top: 20px; 
+            width: 100%; font-weight: bold;
         }
 
-        input[type="text"] { 
-            width: 100%; 
-            padding: 12px; 
-            margin-bottom: 20px; 
-            border: 1px solid #ddd; 
-            border-radius: 5px; 
-            box-sizing: border-box; 
-            font-size: 16px;
-        }
-
-        label { 
-            display: block; 
-            margin-bottom: 10px; 
-            cursor: pointer; 
-            padding: 12px; 
-            border: 1px solid #eee; 
-            border-radius: 5px; 
-        }
-
+        input[type="text"] { width: 100%; padding: 12px; margin-bottom: 20px; border: 1px solid #ddd; border-radius: 5px; box-sizing: border-box; font-size: 16px; }
+        label { display: block; margin-bottom: 10px; cursor: pointer; padding: 12px; border: 1px solid #eee; border-radius: 5px; background: rgba(255,255,255,0.9); }
         input[type="radio"] { margin-right: 10px; transform: scale(1.2); }
     </style>
 </head>
 <body>
 
-    <a href="/login" class="btn-admin">Administrador</a>
+    <div id="marca-dagua"></div>
+    <div id="ruido" class="ruido-overlay"></div>
+
+    <a href="/login" class="btn-admin" style="position: absolute; top: 20px; left: 20px; background: #2c3e50; color: white; padding: 8px 15px; text-decoration: none; border-radius: 5px; font-size: 12px; z-index: 10001;">Administrador</a>
 
     <div class="card">
         <div style="text-align: center; margin-bottom: 20px;">
@@ -140,9 +108,9 @@
             <input type="hidden" name="fraude" id="input_fraude" value="false">
             
             <div id="step-0" class="questao-container active">
-                <div class="aviso-seguranca">
-                    <strong>🛡️ SEGURANÇA MÁXIMA:</strong><br>
-                    O sistema bloqueia capturas de tela. Se você tentar tirar print ou sair desta aba, a tela ficará preta e sua prova será <b>zerada na hora</b>.
+                <div style="background-color: #fff3cd; color: #856404; padding: 15px; border: 1px solid #ffeeba; border-radius: 8px; margin-bottom: 20px; font-size: 14px;">
+                    <strong>🛡️ SEGURANÇA ATIVA:</strong><br>
+                    Esta prova contém marcas d'água dinâmicas e ruído de proteção. Prints serão detectados e sua prova anulada.
                 </div>
                 <input type="text" name="nome" id="nome_input" required placeholder="Nome Completo">
                 <input type="text" name="codigo" id="codigo_input" required placeholder="Código de Acesso" style="text-transform: uppercase;">
@@ -158,11 +126,9 @@
                     <input type="radio" name="pergunta_{{ p.id }}" value="{{ opcao }}"> {{ opcao }}
                 </label>
                 {% endfor %}
-                {% if loop.last %}
-                    <button type="button" id="btn-finalizar" class="btn-proxima" style="background: #27ae60;" onclick="finalizar()">Finalizar Prova</button>
-                {% else %}
-                    <button type="button" class="btn-proxima" onclick="proximaQuestao()">Próxima Pergunta</button>
-                {% endif %}
+                <button type="button" class="btn-proxima" onclick="{{ 'finalizar()' if loop.last else 'proximaQuestao()' }}">
+                    {{ 'Finalizar Prova' if loop.last else 'Próxima Pergunta' }}
+                </button>
             </div>
             {% endfor %}
         </form>
@@ -179,40 +145,35 @@
 
         function marcarComoEnviado() { enviandoFormulario = true; }
 
+        // Ativa o ruído e a marca d'água com o nome do aluno
+        function ativarProtecoesVisuais(nome) {
+            document.getElementById('ruido').style.display = 'block';
+            const bg = document.getElementById('marca-dagua');
+            bg.style.display = 'flex';
+            bg.innerHTML = "";
+            for (let i = 0; i < 15; i++) {
+                const div = document.createElement('div');
+                div.className = 'nome-marca';
+                div.innerText = nome.toUpperCase();
+                bg.appendChild(div);
+            }
+        }
+
         function dispararFraude(motivo) {
             if (!provaIniciada || enviandoFormulario) return;
             enviandoFormulario = true; 
-            
-            // 1. Aplica o blackout total IMEDIATO
             document.body.classList.add('modo-fraude');
             document.getElementById('input_fraude').value = "true";
-
-            // 2. Envia o formulário sem dar tempo ao aluno
-            console.log("Fraude detectada: " + motivo);
             quizForm.submit();
-            alert("🚨 VIOLAÇÃO: Sua prova foi anulada por tentativa de " + motivo);
+            alert("🚨 VIOLAÇÃO: " + motivo);
         }
 
-        // GATILHO DE PRINT MOBILE (Super veloz)
         window.onblur = function() {
             if (provaIniciada && !enviandoFormulario) {
-                // Borra tudo no milissegundo em que o celular pede o foco para o print
                 document.body.classList.add('modo-fraude');
-                dispararFraude("Print ou Saída de Tela");
+                dispararFraude("Saída da tela ou tentativa de Print");
             }
         };
-
-        // Bloqueios adicionais
-        document.addEventListener("visibilitychange", () => {
-            if (document.hidden && provaIniciada) dispararFraude("Troca de aba");
-        });
-
-        document.addEventListener('keydown', e => {
-            if (provaIniciada && (e.key === 'PrintScreen' || (e.ctrlKey && e.key === 'p'))) {
-                e.preventDefault();
-                dispararFraude("Captura de tela");
-            }
-        });
 
         async function iniciarQuiz() {
             const nome = document.getElementById('nome_input').value.trim();
@@ -223,6 +184,7 @@
                 const response = await fetch(`/verificar_codigo/${codigo}`);
                 const data = await response.json();
                 if (data.status === "sucesso") {
+                    ativarProtecoesVisuais(nome);
                     provaIniciada = true; 
                     document.getElementById('timer-box').style.display = 'block';
                     mostrarPasso(1); 
