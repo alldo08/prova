@@ -16,12 +16,12 @@
             -moz-user-select: none;
             -ms-user-select: none;
             user-select: none;
-            transition: filter 0.3s ease, background-color 0.3s ease;
+            transition: filter 0.2s ease, background-color 0.2s ease;
         }
 
         /* CLASSE DE BLOQUEIO PARA MOBILE (PRINT/SAÍDA) */
         .modo-fraude {
-            filter: blur(40px) grayscale(100%);
+            filter: blur(50px) brightness(0) grayscale(100%);
             background-color: #000 !important;
             pointer-events: none;
         }
@@ -39,6 +39,19 @@
             border-radius: 4px;
             margin-top: 0;
         }
+        
+        /* AVISO DE SEGURANÇA EM DESTAQUE */
+        .aviso-seguranca {
+            background-color: #fff3cd;
+            color: #856404;
+            padding: 15px;
+            border: 1px solid #ffeeba;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            line-height: 1.4;
+        }
+
         .btn-admin {
             position: absolute;
             top: 20px;
@@ -103,17 +116,6 @@
             box-sizing: border-box; 
             font-size: 16px;
         }
-        .error-msg { 
-            display: none; 
-            background-color: #ffcccc; 
-            color: #cc0000; 
-            padding: 15px; 
-            border-radius: 8px; 
-            margin-bottom: 20px; 
-            border: 1px solid #cc0000; 
-            text-align: center; 
-            font-weight: bold; 
-        }
         label { 
             display: block; 
             margin-bottom: 10px; 
@@ -147,6 +149,11 @@
         <form id="quizForm" action="/submit" method="post" onsubmit="marcarComoEnviado()">
             
             <div id="step-0" class="questao-container active">
+                <div class="aviso-seguranca">
+                    <strong>🛡️ SISTEMA DE SEGURANÇA ATIVO:</strong><br>
+                    Tentativas de <b>Print Screen</b>, trocar de aba ou minimizar o navegador causarão a <b>anulação automática</b> da prova com nota zero. Mantenha o foco na tela.
+                </div>
+
                 <h2 style="margin-top: 0;">Bem-vindo!</h2>
                 <p>Você terá 60 segundos para responder cada pergunta.</p>
                 
@@ -180,10 +187,8 @@
     </div>
 
     <script>
-        // --- VARIÁVEIS DE CONTROLE DE SEGURANÇA ---
         let provaIniciada = false;
         let enviandoFormulario = false;
-
         let questaoAtual = 0;
         let tempoRestante = 60;
         let cronometro;
@@ -191,18 +196,15 @@
         const timerDisplay = document.getElementById('timer');
         const timerBox = document.getElementById('timer-box');
         const quizForm = document.getElementById('quizForm');
-        const erroDiv = document.getElementById('erro-container');
 
-        // --- FUNÇÕES DE SEGURANÇA ---
-        function marcarComoEnviado() {
-            enviandoFormulario = true;
-        }
+        function marcarComoEnviado() { enviandoFormulario = true; }
 
         function dispararFraude(motivo) {
             if (!provaIniciada || enviandoFormulario) return;
-
             enviandoFormulario = true; 
-            document.body.classList.add('modo-fraude'); // Escurece a tela para o print sair ruim
+
+            // Aplica efeito visual de bloqueio antes do envio
+            document.body.classList.add('modo-fraude');
             
             let inputFraude = document.getElementById('input_fraude');
             if (!inputFraude) {
@@ -218,69 +220,64 @@
             quizForm.submit();
         }
 
-        // Bloqueia Botão Direito
-        document.addEventListener('contextmenu', e => { if(provaIniciada) e.preventDefault(); });
+        // --- PROTEÇÃO MOBILE (O "PULO DO GATO") ---
+        
+        // No celular, o sistema operacional "rouba" o foco para tirar print ou abrir notificações
+        window.addEventListener('blur', () => {
+            if (provaIniciada && !enviandoFormulario) {
+                // Borra a tela imediatamente para o print sair inutilizado
+                document.body.classList.add('modo-fraude');
+                // Pequeno delay para garantir que o blackout aconteça antes do alerta/envio
+                setTimeout(() => {
+                    dispararFraude("Perda de foco detectada (Possível Print ou saída)");
+                }, 300);
+            }
+        });
 
-        // Bloqueia Atalhos (Ctrl+C, Ctrl+U, Ctrl+P, Ctrl+S)
+        // Se o foco voltar e não foi fraude (ex: aviso do sistema rápido), removemos o borrão
+        window.addEventListener('focus', () => {
+            if (!enviandoFormulario) {
+                document.body.classList.remove('modo-fraude');
+            }
+        });
+
+        // Detecta mudança de visibilidade (Troca de aba)
+        document.addEventListener("visibilitychange", () => {
+            if (document.hidden && provaIniciada && !enviandoFormulario) {
+                dispararFraude("Saída da página detectada");
+            }
+        });
+
+        // Bloqueio de teclado e atalhos
+        document.addEventListener('contextmenu', e => { if(provaIniciada) e.preventDefault(); });
         document.addEventListener('keydown', e => {
             if (!provaIniciada || enviandoFormulario) return;
             if (e.ctrlKey && ['c', 'u', 'p', 's'].includes(e.key.toLowerCase())) {
                 e.preventDefault();
-                if(e.key.toLowerCase() !== 'c') dispararFraude("Atalho proibido (Ctrl+" + e.key + ")");
-                else alert("Cópia não permitida!");
+                if(e.key.toLowerCase() !== 'c') dispararFraude("Atalho proibido");
             }
-        });
-
-        // Detecta PrintScreen (Teclado)
-        window.addEventListener('keyup', (e) => {
-            if (e.key === 'PrintScreen' && provaIniciada) {
-                navigator.clipboard.writeText('Conteúdo Protegido');
-                dispararFraude("Captura de tela (Print Screen)");
+            // Bloqueia F12 e PrintScreen
+            if (e.key === 'F12' || e.key === 'PrintScreen') {
+                e.preventDefault();
+                dispararFraude("Tecla de sistema detectada");
             }
-        });
-
-        // DETECÇÃO MOBILE E TROCA DE ABA
-        document.addEventListener("visibilitychange", () => {
-            if (document.visibilityState === 'hidden' && provaIniciada && !enviandoFormulario) {
-                dispararFraude("Saída da página ou minimização");
-            }
-        });
-
-        // Detecta perda de foco (Trigger comum de print em celulares)
-        window.addEventListener('blur', () => {
-            if (provaIniciada && !enviandoFormulario) {
-                document.body.classList.add('modo-fraude');
-                setTimeout(() => {
-                    dispararFraude("A tela perdeu o foco (Possível tentativa de print)");
-                }, 400);
-            }
-        });
-
-        window.addEventListener('focus', () => {
-            if(!enviandoFormulario) document.body.classList.remove('modo-fraude');
         });
 
         // --- LÓGICA DO QUIZ ---
         async function iniciarQuiz() {
             const nome = document.getElementById('nome_input').value.trim();
             const codigo = document.getElementById('codigo_input').value.trim().toUpperCase();
+            if (!nome || !codigo) return alert("Preencha todos os campos.");
+
             const btn = document.getElementById('btn-iniciar');
-        
-            if (!nome || !codigo) { 
-                alert("Por favor, preencha seu nome e o código de acesso."); 
-                return; 
-            }
-        
             btn.disabled = true;
             btn.innerText = "Verificando...";
-        
+
             try {
                 const response = await fetch(`/verificar_codigo/${codigo}`);
                 const data = await response.json();
-        
                 if (data.status === "sucesso") {
                     provaIniciada = true; 
-                    erroDiv.style.display = 'none';
                     timerBox.style.display = 'block';
                     mostrarPasso(1); 
                     cronometro = setInterval(atualizarTimer, 1000);
@@ -291,22 +288,15 @@
                     btn.innerText = "Começar Prova";
                 }
             } catch (error) {
-                alert("Erro de conexão com o servidor.");
+                alert("Erro de conexão.");
                 btn.disabled = false;
             }
         }
 
         function atualizarTimer() {
             timerDisplay.textContent = tempoRestante;
-            if (tempoRestante <= 15) {
-                timerBox.style.color = "#e74c3c";
-            } else {
-                timerBox.style.color = "#27ae60";
-            }
-        
-            if (tempoRestante <= 0) {
-                proximaQuestao();
-            }
+            if (tempoRestante <= 15) timerBox.style.color = "#e74c3c";
+            if (tempoRestante <= 0) proximaQuestao();
             tempoRestante--;
         }
 
@@ -315,9 +305,7 @@
                 questaoAtual++;
                 tempoRestante = 60;
                 mostrarPasso(questaoAtual);
-            } else {
-                finalizar();
-            }
+            } else finalizar();
         }
 
         function mostrarPasso(passo) {
@@ -331,34 +319,11 @@
 
         function finalizar() {
             enviandoFormulario = true; 
-            window.onbeforeunload = null; 
             clearInterval(cronometro);
-        
-            const btnFinalizar = document.getElementById('btn-finalizar');
-            
             let inputFraude = document.getElementById('input_fraude');
-            if (inputFraude) {
-                inputFraude.value = "false"; 
-            }
-        
-            if(btnFinalizar) {
-                btnFinalizar.disabled = true;
-                btnFinalizar.innerText = "Enviando Prova...";
-                btnFinalizar.style.background = "#95a5a6";
-            }
-            
+            if (inputFraude) inputFraude.value = "false"; 
             quizForm.submit();
         }
-        
-        window.onbeforeunload = function() { 
-            if(provaIniciada && !enviandoFormulario) return "Sair agora perderá seu progresso."; 
-        };
-        
-        setInterval(async () => {
-            if (provaIniciada && !enviandoFormulario) {
-                try { await fetch('/health-check'); } catch (e) {}
-            }
-        }, 40000);
     </script>
 </body>
 </html>
