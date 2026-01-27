@@ -243,35 +243,36 @@
             const nome = document.getElementById('nome_input').value.trim();
             const codigo = document.getElementById('codigo_input').value.trim().toUpperCase();
             const btn = document.getElementById('btn-iniciar');
-
+        
             if (!nome || !codigo) { 
                 alert("Por favor, preencha seu nome e o código de acesso."); 
                 return; 
             }
-
+        
             btn.disabled = true;
             btn.innerText = "Verificando...";
-
+        
             try {
                 const response = await fetch(`/verificar_codigo/${codigo}`);
                 const data = await response.json();
-
+        
                 if (data.status === "sucesso") {
-                    provaIniciada = true; // ATIVA O MONITOR DE FRAUDE AQUI
+                    // --- A MUDANÇA CRUCIAL ESTÁ AQUI ---
+                    provaIniciada = true; // Agora o "vigia" começa a trabalhar
+                    // -----------------------------------
+                    
                     erroDiv.style.display = 'none';
                     timerBox.style.display = 'block';
-                    mostrarPasso(1);
+                    mostrarPasso(1); // Esconde o step-0 e mostra a questão 1
                     cronometro = setInterval(atualizarTimer, 1000);
                     document.querySelector('.btn-admin').style.display = 'none';
                 } else {
-                    erroDiv.innerText = "⚠️ " + (data.mensagem || "Código inválido.");
-                    erroDiv.style.display = 'block';
+                    alert(data.mensagem);
                     btn.disabled = false;
                     btn.innerText = "Começar Prova";
                 }
             } catch (error) {
-                erroDiv.innerText = "⚠️ Erro de conexão.";
-                erroDiv.style.display = 'block';
+                alert("Erro de conexão com o servidor.");
                 btn.disabled = false;
             }
         }
@@ -338,3 +339,4 @@
     </script>
 </body>
 </html>
+
