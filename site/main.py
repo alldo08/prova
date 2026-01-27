@@ -137,30 +137,41 @@ async def home(request: Request):
 
 
 @app.post("/submit")
-async def submit(request: Request, nome: str = Form(...), codigo: str = Form(...)):
+async def submit(
+    request: Request, 
+    nome: str = Form(...), 
+    codigo: str = Form(...),
+    fraude: str = Form(None)
+):
     codigo = codigo.strip().upper()
     form_data = await request.form()
+    
+    # Verifica se o JS enviou o sinal de fraude
+    foi_fraude = (fraude == "true")
 
+    # Regra: Se houve fraude, o nome ganha o sufixo e a nota é forçada a 0
+    nome_final = f"{nome} (FRAUDE)" if foi_fraude else nome
     acertos = 0
-    for p in PERGUNTAS:
-        resposta = form_data.get(f"pergunta_{p['id']}")
-        if resposta and resposta.strip() == p["correta"].strip():
-            acertos += 1
+    
+    # Só calcula a nota real se NÃO houve fraude
+    if not foi_fraude:
+        for p in PERGUNTAS:
+            resposta = form_data.get(f"pergunta_{p['id']}")
+            if resposta and resposta.strip() == p["correta"].strip():
+                acertos += 1
 
     data = datetime.now(timezone_br).strftime("%d/%m/%Y %H:%M")
 
     conn = get_db_connection()
     cur = conn.cursor()
 
+    # Salva no PostgreSQL
     cur.execute(
         "INSERT INTO resultados (nome, codigo, nota, data) VALUES (%s, %s, %s, %s)",
-        (nome, codigo, acertos, data)
+        (nome_final, codigo, acertos, data)
     )
 
-    cur.execute(
-        "UPDATE codigos_validos SET usado = TRUE WHERE codigo = %s",
-        (codigo,)
-    )
+    cur.execute("UPDATE codigos_validos SET usado = TRUE WHERE codigo = %s", (codigo,))
 
     conn.commit()
     cur.close()
@@ -168,7 +179,13 @@ async def submit(request: Request, nome: str = Form(...), codigo: str = Form(...
 
     return templates.TemplateResponse(
         "resultado.html",
-        {"request": request, "nome": nome, "acertos": acertos, "total": len(PERGUNTAS)}
+        {
+            "request": request, 
+            "nome": nome_final, 
+            "acertos": acertos, 
+            "total": len(PERGUNTAS),
+            "fraude": foi_fraude
+        }
     )
 
 
@@ -450,6 +467,7 @@ async def resultados_publicos():
 @app.get("/health-check")
 async def health_check():
     return {"status": "still_alive"}
+
 
 
 
