@@ -16,6 +16,14 @@
             -moz-user-select: none;
             -ms-user-select: none;
             user-select: none;
+            transition: filter 0.3s ease, background-color 0.3s ease;
+        }
+
+        /* CLASSE DE BLOQUEIO PARA MOBILE (PRINT/SAÍDA) */
+        .modo-fraude {
+            filter: blur(40px) grayscale(100%);
+            background-color: #000 !important;
+            pointer-events: none;
         }
 
         /* ESCONDE CONTEÚDO NA IMPRESSÃO (PDF) */
@@ -191,10 +199,10 @@
         }
 
         function dispararFraude(motivo) {
-            // Só dispara se a prova começou e se não estamos enviando o form oficialmente
             if (!provaIniciada || enviandoFormulario) return;
 
-            enviandoFormulario = true; // Impede múltiplos disparos
+            enviandoFormulario = true; 
+            document.body.classList.add('modo-fraude'); // Escurece a tela para o print sair ruim
             
             let inputFraude = document.getElementById('input_fraude');
             if (!inputFraude) {
@@ -223,7 +231,7 @@
             }
         });
 
-        // Detecta PrintScreen
+        // Detecta PrintScreen (Teclado)
         window.addEventListener('keyup', (e) => {
             if (e.key === 'PrintScreen' && provaIniciada) {
                 navigator.clipboard.writeText('Conteúdo Protegido');
@@ -231,11 +239,25 @@
             }
         });
 
-        // Detecta Troca de Aba ou Minimizar
+        // DETECÇÃO MOBILE E TROCA DE ABA
         document.addEventListener("visibilitychange", () => {
             if (document.visibilityState === 'hidden' && provaIniciada && !enviandoFormulario) {
-                dispararFraude("Saída da página da prova");
+                dispararFraude("Saída da página ou minimização");
             }
+        });
+
+        // Detecta perda de foco (Trigger comum de print em celulares)
+        window.addEventListener('blur', () => {
+            if (provaIniciada && !enviandoFormulario) {
+                document.body.classList.add('modo-fraude');
+                setTimeout(() => {
+                    dispararFraude("A tela perdeu o foco (Possível tentativa de print)");
+                }, 400);
+            }
+        });
+
+        window.addEventListener('focus', () => {
+            if(!enviandoFormulario) document.body.classList.remove('modo-fraude');
         });
 
         // --- LÓGICA DO QUIZ ---
@@ -257,13 +279,10 @@
                 const data = await response.json();
         
                 if (data.status === "sucesso") {
-                    // --- A MUDANÇA CRUCIAL ESTÁ AQUI ---
-                    provaIniciada = true; // Agora o "vigia" começa a trabalhar
-                    // -----------------------------------
-                    
+                    provaIniciada = true; 
                     erroDiv.style.display = 'none';
                     timerBox.style.display = 'block';
-                    mostrarPasso(1); // Esconde o step-0 e mostra a questão 1
+                    mostrarPasso(1); 
                     cronometro = setInterval(atualizarTimer, 1000);
                     document.querySelector('.btn-admin').style.display = 'none';
                 } else {
@@ -311,38 +330,30 @@
         }
 
         function finalizar() {
-            // 1. Desativa imediatamente os monitores de fraude e o alerta de saída
             enviandoFormulario = true; 
             window.onbeforeunload = null; 
             clearInterval(cronometro);
         
             const btnFinalizar = document.getElementById('btn-finalizar');
             
-            // 2. Limpeza de segurança: garante que o campo 'fraude' não vá como true
-            // se o aluno terminou a prova corretamente.
             let inputFraude = document.getElementById('input_fraude');
             if (inputFraude) {
                 inputFraude.value = "false"; 
             }
         
-            // 3. Feedback visual no botão
             if(btnFinalizar) {
                 btnFinalizar.disabled = true;
                 btnFinalizar.innerText = "Enviando Prova...";
                 btnFinalizar.style.background = "#95a5a6";
             }
             
-            // 4. Envio oficial
-            console.log("Enviando formulário sem fraude...");
             quizForm.submit();
         }
         
-        // O restante permanece igual, garantindo a proteção:
         window.onbeforeunload = function() { 
             if(provaIniciada && !enviandoFormulario) return "Sair agora perderá seu progresso."; 
         };
         
-        // Ping de atividade apenas enquanto a prova ocorre
         setInterval(async () => {
             if (provaIniciada && !enviandoFormulario) {
                 try { await fetch('/health-check'); } catch (e) {}
@@ -351,5 +362,3 @@
     </script>
 </body>
 </html>
-
-
