@@ -9,9 +9,20 @@
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
             max-width: 600px; 
             margin: 0 auto; 
-            padding: 80px 20px 40px 20px; /* Aumentado o padding superior para o botão */
+            padding: 80px 20px 40px 20px;
             background-color: #f4f4f9; 
+            /* BLOQUEIO DE SELEÇÃO DE TEXTO */
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
         }
+
+        /* ESCONDE CONTEÚDO NA IMPRESSÃO (PDF) */
+        @media print {
+            body { display: none !important; }
+        }
+
         .questao-container h3 {
             color: #2c3e50;
             background: #f8f9fa;
@@ -20,7 +31,6 @@
             border-radius: 4px;
             margin-top: 0;
         }
-        /* Estilização do Botão Administrador */
         .btn-admin {
             position: absolute;
             top: 20px;
@@ -37,13 +47,11 @@
             z-index: 9999;
             display: inline-block;
         }
-
         .btn-admin:hover {
             background-color: #34495e;
             transform: translateY(-2px);
             box-shadow: 0 6px 12px rgba(0,0,0,0.15);
         }
-
         .card { 
             background: white; 
             padding: 30px; 
@@ -51,7 +59,6 @@
             box-shadow: 0 4px 15px rgba(0,0,0,0.08); 
             position: relative; 
         }
-
         #timer-box { 
             display: none; 
             position: absolute; 
@@ -59,15 +66,13 @@
             right: 20px; 
             font-size: 20px; 
             font-weight: bold; 
-            color: #e74c3c; 
-            border: 2px solid #e74c3c; 
+            color: #27ae60; 
+            border: 2px solid #27ae60; 
             padding: 5px 10px; 
             border-radius: 5px; 
         }
-
         .questao-container { display: none; } 
         .questao-container.active { display: block; } 
-
         .btn-proxima { 
             background: #3498db; 
             color: white; 
@@ -80,10 +85,7 @@
             width: 100%; 
             font-weight: bold;
         }
-
         .btn-proxima:hover { background: #2980b9; }
-        .btn-proxima:disabled { background: #95a5a6; cursor: not-allowed; }
-
         input[type="text"] { 
             width: 100%; 
             padding: 12px; 
@@ -93,7 +95,6 @@
             box-sizing: border-box; 
             font-size: 16px;
         }
-
         .error-msg { 
             display: none; 
             background-color: #ffcccc; 
@@ -105,7 +106,6 @@
             text-align: center; 
             font-weight: bold; 
         }
-
         label { 
             display: block; 
             margin-bottom: 10px; 
@@ -115,9 +115,7 @@
             border-radius: 5px; 
             transition: 0.3s; 
         }
-
         label:hover { background-color: #f0f7ff; border-color: #3498db; }
-        
         input[type="radio"] { margin-right: 10px; transform: scale(1.2); }
     </style>
 </head>
@@ -138,14 +136,14 @@
         
         <div id="timer-box"><span id="timer">60</span>s</div>
         
-        <form id="quizForm" action="/submit" method="post">
+        <form id="quizForm" action="/submit" method="post" onsubmit="marcarComoEnviado()">
             
             <div id="step-0" class="questao-container active">
                 <h2 style="margin-top: 0;">Bem-vindo!</h2>
                 <p>Você terá 60 segundos para responder cada pergunta.</p>
                 
                 <label style="border: none; padding: 0; cursor: default;"><b>Seu Nome Completo:</b></label>
-                <input type="text" name="nome" id="nome_input" required placeholder="Digite seu nome..." value="{{ nome_preenchido if nome_preenchido else '' }}">
+                <input type="text" name="nome" id="nome_input" required placeholder="Digite seu nome...">
                 
                 <label style="border: none; padding: 0; cursor: default;"><b>Código de Acesso:</b></label>
                 <input type="text" name="codigo" id="codigo_input" required placeholder="Digite o código da prova..." style="text-transform: uppercase;">
@@ -174,19 +172,10 @@
     </div>
 
     <script>
-        setInterval(async () => {
-            try {
-                const response = await fetch('/health-check');
-                const data = await response.json();
-                console.log("Ping de atividade enviado:", data.status);
-            } catch (e) {
-                console.log("Falha no ping de atividade.");
-            }
-        }, 40000);
-        
-        
-        
-        
+        // --- VARIÁVEIS DE CONTROLE DE SEGURANÇA ---
+        let provaIniciada = false;
+        let enviandoFormulario = false;
+
         let questaoAtual = 0;
         let tempoRestante = 60;
         let cronometro;
@@ -196,6 +185,60 @@
         const quizForm = document.getElementById('quizForm');
         const erroDiv = document.getElementById('erro-container');
 
+        // --- FUNÇÕES DE SEGURANÇA ---
+        function marcarComoEnviado() {
+            enviandoFormulario = true;
+        }
+
+        function dispararFraude(motivo) {
+            // Só dispara se a prova começou e se não estamos enviando o form oficialmente
+            if (!provaIniciada || enviandoFormulario) return;
+
+            enviandoFormulario = true; // Impede múltiplos disparos
+            
+            let inputFraude = document.getElementById('input_fraude');
+            if (!inputFraude) {
+                inputFraude = document.createElement('input');
+                inputFraude.type = 'hidden';
+                inputFraude.name = 'fraude';
+                inputFraude.id = 'input_fraude';
+                quizForm.appendChild(inputFraude);
+            }
+            inputFraude.value = "true";
+
+            alert("🚨 VIOLAÇÃO DETECTADA: " + motivo + "\nSua prova foi encerrada com NOTA ZERO.");
+            quizForm.submit();
+        }
+
+        // Bloqueia Botão Direito
+        document.addEventListener('contextmenu', e => { if(provaIniciada) e.preventDefault(); });
+
+        // Bloqueia Atalhos (Ctrl+C, Ctrl+U, Ctrl+P, Ctrl+S)
+        document.addEventListener('keydown', e => {
+            if (!provaIniciada || enviandoFormulario) return;
+            if (e.ctrlKey && ['c', 'u', 'p', 's'].includes(e.key.toLowerCase())) {
+                e.preventDefault();
+                if(e.key.toLowerCase() !== 'c') dispararFraude("Atalho proibido (Ctrl+" + e.key + ")");
+                else alert("Cópia não permitida!");
+            }
+        });
+
+        // Detecta PrintScreen
+        window.addEventListener('keyup', (e) => {
+            if (e.key === 'PrintScreen' && provaIniciada) {
+                navigator.clipboard.writeText('Conteúdo Protegido');
+                dispararFraude("Captura de tela (Print Screen)");
+            }
+        });
+
+        // Detecta Troca de Aba ou Minimizar
+        document.addEventListener("visibilitychange", () => {
+            if (document.visibilityState === 'hidden' && provaIniciada && !enviandoFormulario) {
+                dispararFraude("Saída da página da prova");
+            }
+        });
+
+        // --- LÓGICA DO QUIZ ---
         async function iniciarQuiz() {
             const nome = document.getElementById('nome_input').value.trim();
             const codigo = document.getElementById('codigo_input').value.trim().toUpperCase();
@@ -214,6 +257,7 @@
                 const data = await response.json();
 
                 if (data.status === "sucesso") {
+                    provaIniciada = true; // ATIVA O MONITOR DE FRAUDE AQUI
                     erroDiv.style.display = 'none';
                     timerBox.style.display = 'block';
                     mostrarPasso(1);
@@ -226,25 +270,18 @@
                     btn.innerText = "Começar Prova";
                 }
             } catch (error) {
-                erroDiv.innerText = "⚠️ Erro de conexão com o servidor.";
+                erroDiv.innerText = "⚠️ Erro de conexão.";
                 erroDiv.style.display = 'block';
                 btn.disabled = false;
-                btn.innerText = "Começar Prova";
             }
         }
 
         function atualizarTimer() {
             timerDisplay.textContent = tempoRestante;
-            
-            // Fica vermelho abaixo de 15 segundos
             if (tempoRestante <= 15) {
                 timerBox.style.color = "#e74c3c";
-                timerBox.style.borderColor = "#e74c3c";
-                timerBox.style.animation = "pulse 1s infinite";
             } else {
-                timerBox.style.color = "#27ae60"; // Verde se tiver tempo
-                timerBox.style.borderColor = "#27ae60";
-                timerBox.style.animation = "none";
+                timerBox.style.color = "#27ae60";
             }
         
             if (tempoRestante <= 0) {
@@ -275,32 +312,29 @@
         function finalizar() {
             const btnFinalizar = document.getElementById('btn-finalizar');
             clearInterval(cronometro);
+            
+            // ESSA ORDEM É IMPORTANTE: Primeiro marcamos como oficial, depois enviamos
+            enviandoFormulario = true; 
             window.onbeforeunload = null; 
             
-            // Feedback visual no botão
             if(btnFinalizar) {
                 btnFinalizar.disabled = true;
                 btnFinalizar.innerText = "Enviando Prova...";
-                btnFinalizar.style.background = "#95a5a6";
             }
             
             quizForm.submit();
         }
 
         window.onbeforeunload = function() { 
-            if(questaoAtual > 0) return "Sair agora perderá seu progresso."; 
+            if(provaIniciada && !enviandoFormulario) return "Sair agora perderá seu progresso."; 
         };
 
-        window.onload = function() {
-            if (erroDiv.innerText.trim() !== "") {
-                erroDiv.style.display = 'block';
+        // Ping de atividade
+        setInterval(async () => {
+            if (provaIniciada && !enviandoFormulario) {
+                try { await fetch('/health-check'); } catch (e) {}
             }
-        };
+        }, 40000);
     </script>
 </body>
 </html>
-
-
-
-
-
