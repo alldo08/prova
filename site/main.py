@@ -137,21 +137,33 @@ async def home(request: Request):
 
 
 @app.post("/submit")
-async def submit(request: Request, nome: str = Form(...), codigo: str = Form(...)):
+async def submit(
+    request: Request, 
+    nome: str = Form(...), 
+    codigo: str = Form(...),
+    fraude: str = Form(None)  # Novo campo vindo do JS
+):
     codigo = codigo.strip().upper()
     form_data = await request.form()
+    
+    # Verifica se o sinal de fraude foi enviado pelo navegador
+    foi_fraude = (fraude == "true")
 
-    acertos = 0
-    for p in PERGUNTAS:
-        resposta = form_data.get(f"pergunta_{p['id']}")
-        if resposta and resposta.strip() == p["correta"].strip():
-            acertos += 1
+    if foi_fraude:
+        acertos = 0
+    else:
+        acertos = 0
+        for p in PERGUNTAS:
+            resposta = form_data.get(f"pergunta_{p['id']}")
+            if resposta and resposta.strip() == p["correta"].strip():
+                acertos += 1
 
     data = datetime.now(timezone_br).strftime("%d/%m/%Y %H:%M")
 
     conn = get_db_connection()
     cur = conn.cursor()
 
+    # Grava o resultado (será 0 se foi_fraude for True)
     cur.execute(
         "INSERT INTO resultados (nome, codigo, nota, data) VALUES (%s, %s, %s, %s)",
         (nome, codigo, acertos, data)
@@ -168,9 +180,14 @@ async def submit(request: Request, nome: str = Form(...), codigo: str = Form(...
 
     return templates.TemplateResponse(
         "resultado.html",
-        {"request": request, "nome": nome, "acertos": acertos, "total": len(PERGUNTAS)}
+        {
+            "request": request, 
+            "nome": nome, 
+            "acertos": acertos, 
+            "total": len(PERGUNTAS),
+            "fraude": foi_fraude  # Passamos para o HTML exibir a mensagem de alerta
+        }
     )
-
 
 @app.get("/login", response_class=HTMLResponse)
 async def login_page():
@@ -450,6 +467,7 @@ async def resultados_publicos():
 @app.get("/health-check")
 async def health_check():
     return {"status": "still_alive"}
+
 
 
 
