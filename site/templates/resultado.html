@@ -2,8 +2,7 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <meta http-equiv="refresh" content="30; URL=/">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="refresh" content="60; URL=/"> <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Resultado Final</title>
     <style>
         body { 
@@ -12,19 +11,30 @@
             display: flex; 
             align-items: center; 
             justify-content: center; 
-            height: 100vh; 
+            min-height: 100vh; 
             margin: 0; 
         }
         .result-card { 
             background: white; 
-            padding: 50px; 
+            padding: 40px; 
             border-radius: 20px; 
             box-shadow: 0 15px 35px rgba(0,0,0,0.1); 
             text-align: center; 
-            max-width: 450px; 
+            max-width: 500px; 
             width: 90%; 
         }
         h1 { color: #2c3e50; margin-bottom: 5px; font-size: 28px; }
+        
+        /* ESTILO PARA QUANDO HOUVER FRAUDE */
+        .fraude-alerta {
+            background-color: #fff5f5;
+            border: 2px solid #e74c3c;
+            color: #c0392b;
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+        }
+
         .score-container {
             background-color: #ebf5ff;
             border-radius: 15px;
@@ -37,54 +47,85 @@
             color: #3498db; 
             display: block;
         }
+        /* Cor vermelha na nota se for fraude */
+        .score-fraude { color: #e74c3c !important; }
+
         .total { font-size: 20px; color: #7f8c8d; }
-        .message { color: #576574; font-size: 18px; line-height: 1.5; }
+        .message { color: #576574; font-size: 16px; line-height: 1.5; text-align: justify; }
         .footer-msg { margin-top: 30px; font-size: 14px; color: #bdc3c7; }
-           
-    
+
+        .btn-pdf {
+            background-color: #27ae60;
+            color: white;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            margin-top: 20px;
+            display: inline-block;
+            text-decoration: none;
+        }
+        .btn-pdf:hover { background-color: #219150; }
+
+        /* CONFIGURAÇÃO DE IMPRESSÃO (PDF) */
+        @media print {
+            body { background: white; }
+            .btn-pdf, .footer-msg, #progresso-box, #contagem-msg { display: none !important; }
+            .result-card { box-shadow: none; border: 1px solid #eee; width: 100%; max-width: 100%; }
+        }
     </style>
 </head>
 <body>
-    <div class="result-card">
-        <h1>Excelente, {{ nome }}!</h1>
-        <p class="message">Sua avaliação foi concluída com sucesso.</p>
+    <div class="result-card" id="area-impressao">
+        
+        {% if fraude %}
+            <div class="fraude-alerta">
+                <h2 style="margin: 0;">🚨 PROVA ANULADA</h2>
+                <p style="margin: 5px 0 0 0;">Tentativa de violação de segurança detectada.</p>
+            </div>
+            <h1>{{ nome }}</h1> {% else %}
+            <h1>Excelente, {{ nome }}!</h1>
+            <p class="message" style="text-align: center;">Sua avaliação foi concluída com sucesso.</p>
+        {% endif %}
         
         <div class="score-container">
-            <span class="score">{{ acertos }} / {{ total }}</span>
+            <span class="score {% if fraude %}score-fraude{% endif %}">{{ acertos }} / {{ total }}</span>
             <span class="total">questões corretas</span>
         </div>
 
-        <p class="message">
-            Tendo em vista que abandono de incapaz não se penaliza por familiar quando se tem um cuidador na residência, 
-            o mesmo se torna responsável pelo paciente ao assumir a responsabilidade de um plantão e esteja ciente ou 
-            convicto(a) ou não que o paciente em sua responsabilidade depende de você.
-            <br><br>
-            <strong>Boa Sorte!</strong>
-            <br>
-            <strong>SANTER SAÚDE.</strong>
-        </p>
-        <div style="width: 100%; background: #eee; height: 8px; border-radius: 4px; overflow: hidden; margin-top: 25px;">
-            <div id="barra-progresso" style="width: 100%; background: #3498db; height: 100%; transition: width 30s linear;"></div>
+        <div class="message">
+            <p>
+                Tendo em vista que abandono de incapaz não se penaliza por familiar quando se tem um cuidador na residência, 
+                o mesmo se torna responsável pelo paciente ao assumir a responsabilidade de um plantão e esteja ciente ou 
+                convicto(a) ou não que o paciente em sua responsabilidade depende de você.
+            </p>
+            <p style="text-align: center;">
+                <strong>Boa Sorte!</strong><br>
+                <strong>SANTER SAÚDE.</strong>
+            </p>
         </div>
-        <p style="font-size: 12px; color: #7f8c8d; text-align: center; margin-top: 5px;">
-        Voltando para o início em 30 segundos...
+
+        {% if not fraude %}
+            <button onclick="window.print()" class="btn-pdf">📥 Salvar Comprovante (PDF)</button>
+        {% endif %}
+
+        <div id="progresso-box" style="width: 100%; background: #eee; height: 8px; border-radius: 4px; overflow: hidden; margin-top: 25px;">
+            <div id="barra-progresso" style="width: 100%; background: #3498db; height: 100%; transition: width 60s linear;"></div>
+        </div>
+        <p id="contagem-msg" style="font-size: 12px; color: #7f8c8d; text-align: center; margin-top: 5px;">
+            Voltando para o início em 60 segundos...
         </p>
 
-</div> <script>
-    window.onload = () => {
-        setTimeout(() => {
-            document.getElementById('barra-progresso').style.width = '0%';
-        }, 100);
-    };
-</script>
         <div class="footer-msg">Você já pode fechar esta aba.</div>
     </div>
+
+    <script>
+        window.onload = () => {
+            setTimeout(() => {
+                document.getElementById('barra-progresso').style.width = '0%';
+            }, 100);
+        };
+    </script>
 </body>
-
 </html>
-
-
-
-
-
-
