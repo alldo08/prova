@@ -31,7 +31,7 @@ templates = Jinja2Templates(directory="templates")
 async def self_ping():
     """Mantém o Render acordado mandando um pulso interno a cada 40s"""
     # IMPORTANTE: Substitua pela URL real do seu app no Render
-    url = "https://prova-0rr1.onrender.com/" 
+    url = "https://prova-0rr1.onrender.com/health-check" 
     
     await asyncio.sleep(10) # Espera o servidor ligar totalmente
     async with httpx.AsyncClient() as client:
@@ -281,5 +281,6 @@ def exportar_resultados_csv():
 @app.get("/health-check")
 async def health_check():
     return {"status": "still_alive"}
+
 
 
