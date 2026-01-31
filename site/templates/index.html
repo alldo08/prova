@@ -169,6 +169,19 @@
     </div>
 
     <script>
+        setInterval(async () => {
+            try {
+                const response = await fetch('/health-check');
+                const data = await response.json();
+                console.log("Ping de atividade enviado:", data.status);
+            } catch (e) {
+                console.log("Falha no ping de atividade.");
+            }
+        }, 40000);
+        
+        
+        
+        
         let provaIniciada = false;
         let enviandoFormulario = false;
         let questaoAtual = 0;
@@ -267,3 +280,4 @@
     </script>
 </body>
 </html>
+
