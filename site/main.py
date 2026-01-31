@@ -13,7 +13,8 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.responses import StreamingResponse
 from fastapi import Response
-
+import asyncio  # Para rodar o pulso em segundo plano
+import httpx    # Para o servidor conseguir "clicar" nele mesmo
 # =============================
 # CONFIGURAÇÃO
 # =============================
@@ -27,7 +28,20 @@ templates = Jinja2Templates(directory="templates")
 # =============================
 # MIDDLEWARE & BANCO DE DADOS
 # =============================
-
+async def self_ping():
+    """Mantém o Render acordado mandando um pulso interno a cada 40s"""
+    # IMPORTANTE: Substitua pela URL real do seu app no Render
+    url = "https://santorsaude.onrender.com/health-check" 
+    
+    await asyncio.sleep(10) # Espera o servidor ligar totalmente
+    async with httpx.AsyncClient() as client:
+        while True:
+            try:
+                await client.get(url)
+                # Opcional: print(f"Auto-pulso enviado!") 
+            except Exception:
+                pass # Ignora erros se o site ainda estiver subindo
+            await asyncio.sleep(40)
 @app.middleware("http")
 async def add_no_cache_headers(request: Request, call_next):
     response = await call_next(request)
@@ -67,6 +81,7 @@ def startup():
     try:
         init_db()
         print("Banco inicializado com sucesso")
+        asyncio.create_task(self_ping())
     except Exception as e:
         print("Erro ao inicializar banco:", e)
 
@@ -266,3 +281,4 @@ def exportar_resultados_csv():
 @app.get("/health-check")
 async def health_check():
     return {"status": "still_alive"}
+
