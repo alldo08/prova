@@ -270,35 +270,59 @@ async def gerar_codigo():
     return RedirectResponse(url="/admin", status_code=303)
 
 @app.get("/resultados", response_class=HTMLResponse)
-async def resultados_publicos():
+async def resultados_publicos(request: Request):
+    # Verifica se o admin está logado (opcional, já que você chamou de resultados_publicos)
+    if request.cookies.get("admin") != "logado":
+        return RedirectResponse("/login")
+
     conn = get_db_connection()
-    cursor = conn.cursor()
+    # Usando DictCursor para facilitar a leitura das colunas
+    cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
 
-    cursor.execute("""
-        SELECT
-            nome,
-            codigo,
-            nota,
-            data
-        FROM resultados
-        ORDER BY
-            nota DESC,
-            TO_TIMESTAMP(data, 'DD/MM/YYYY HH24:MI') ASC
+    # 1. Busca Resultados da Prova
+    cur.execute("""
+        SELECT nome, codigo, nota, data 
+        FROM resultados 
+        ORDER BY nota DESC, TO_TIMESTAMP(data, 'DD/MM/YYYY HH24:MI') ASC
     """)
+    dados_provas = cur.fetchall()
 
-    dados = cursor.fetchall()
+    # 2. Busca Candidatos Cadastrados
+    cur.execute("SELECT nome, telefone, horarios, ja_presta_servico, data_cadastro FROM candidatos ORDER BY id DESC")
+    dados_candidatos = cur.fetchall()
 
-    cursor.close()
+    cur.close()
     conn.close()
 
-    linhas = ""
-    for nome, codigo, nota, data in dados:
-        linhas += f"""
+    # Gerar linhas da tabela de PROVAS
+    linhas_provas = ""
+    for r in dados_provas:
+        tag_fraude = '<span style="color:red; font-size:10px"> [FRAUDE]</span>' if "(FRAUDE)" in r['nome'] else ""
+        linhas_provas += f"""
         <tr>
-            <td>{nome}</td>
-            <td>{codigo}</td>
-            <td>{nota}</td>
-            <td>{data}</td>
+            <td style="padding:12px; border-bottom:1px solid #eee">{r['nome']}{tag_fraude}</td>
+            <td style="padding:12px; border-bottom:1px solid #eee">{r['codigo']}</td>
+            <td style="padding:12px; border-bottom:1px solid #eee"><strong>{r['nota']}</strong></td>
+            <td style="padding:12px; border-bottom:1px solid #eee">{r['data']}</td>
+        </tr>
+        """
+
+    # Gerar linhas da tabela de CANDIDATOS com link WhatsApp
+    linhas_candidatos = ""
+    for c in dados_candidatos:
+        # Limpar telefone para o link
+        tel_limpo = c['telefone'].replace('(','').replace(')','').replace('-','').replace(' ','')
+        linhas_candidatos += f"""
+        <tr class="linha-candidato" data-horarios="{c['horarios'].lower()}" data-nome="{c['nome'].lower()}">
+            <td style="padding:12px; border-bottom:1px solid #eee">{c['nome']}</td>
+            <td style="padding:12px; border-bottom:1px solid #eee">
+                <a href="https://wa.me/55{tel_limpo}" target="_blank" style="background:#25D366; color:white; padding:4px 8px; border-radius:4px; text-decoration:none; font-size:12px">
+                    📱 {c['telefone']}
+                </a>
+            </td>
+            <td style="padding:12px; border-bottom:1px solid #eee"><strong>{c['horarios']}</strong></td>
+            <td style="padding:12px; border-bottom:1px solid #eee">{c['ja_presta_servico']}</td>
+            <td style="padding:12px; border-bottom:1px solid #eee">{c['data_cadastro']}</td>
         </tr>
         """
 
@@ -307,50 +331,92 @@ async def resultados_publicos():
     <html>
     <head>
         <meta charset="utf-8">
-        <title>Resultados da Prova</title>
+        <title>Painel de Resultados - Santer Saúde</title>
+        <style>
+            .filter-box {{ background:white; padding:15px; margin-bottom:15px; border-radius:8px; box-shadow:0 2px 10px rgba(0,0,0,0.05); display:flex; gap:10px; align-items:center; }}
+            input, select {{ padding:8px; border-radius:5px; border:1px solid #ccc; }}
+            th {{ text-align:left; padding:12px; }}
+        </style>
     </head>
-    <body style="font-family:Arial; background:#f4f6f8; padding:30px">
+    <body style="font-family:Arial, sans-serif; background:#f4f6f8; padding:30px">
 
-        <div style="max-width:900px;margin:auto">
+        <div style="max-width:1100px; margin:auto">
 
-            <div style="display:flex;justify-content:space-between;align-items:center">
-                <h2>Resultados da Prova</h2>
-
-                <a href="/resultados/csv" style="
-                    background:#2a5298;
-                    color:white;
-                    padding:10px 16px;
-                    border-radius:6px;
-                    text-decoration:none;
-                    font-weight:bold;
-                ">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px">
+                <h2 style="color:#2a5298">📝 Resultados das Provas</h2>
+                <a href="/resultados/csv" style="background:#2a5298; color:white; padding:10px 16px; border-radius:6px; text-decoration:none; font-weight:bold;">
                     ⬇ Exportar CSV
                 </a>
             </div>
 
-            <table style="
-                width:100%;
-                margin-top:15px;
-                border-collapse:collapse;
-                background:white;
-                box-shadow:0 10px 30px rgba(0,0,0,.1)
-            ">
-                <tr style="background:#2a5298;color:white">
-                    <th style="padding:12px">Nome</th>
+            <table style="width:100%; border-collapse:collapse; background:white; box-shadow:0 10px 30px rgba(0,0,0,.1); margin-bottom:50px">
+                <tr style="background:#2a5298; color:white">
+                    <th>Nome</th>
                     <th>Código</th>
                     <th>Nota</th>
                     <th>Data</th>
                 </tr>
-                {linhas}
+                {linhas_provas}
             </table>
 
+            <hr style="border:0; border-top:2px solid #ccc; margin:40px 0">
+
+            <h2 style="color:#1abc9c">📋 Candidatos Interessados</h2>
+
+            <div class="filter-box">
+                <strong>🔍 Filtrar:</strong>
+                <select id="filtroHorario" onchange="filtrarTudo()">
+                    <option value="todos">Todos os Plantões</option>
+                    <option value="8">8h</option>
+                    <option value="12">12h</option>
+                    <option value="24">24h</option>
+                    <option value="48">48h</option>
+                </select>
+                <input type="text" id="buscaNome" placeholder="Buscar por nome..." onkeyup="filtrarTudo()" style="flex-grow:1">
+                <span id="contador" style="font-weight:bold; color:#1abc9c"></span>
+            </div>
+
+            <table id="tabelaCandidatos" style="width:100%; border-collapse:collapse; background:white; box-shadow:0 10px 30px rgba(0,0,0,.1)">
+                <tr style="background:#1abc9c; color:white">
+                    <th style="padding:12px">Nome</th>
+                    <th>WhatsApp</th>
+                    <th>Disponibilidade</th>
+                    <th>É Santer?</th>
+                    <th>Data Cadastro</th>
+                </tr>
+                {linhas_candidatos}
+            </table>
         </div>
+
+        <script>
+        function filtrarTudo() {{
+            const filtroH = document.getElementById('filtroHorario').value;
+            const buscaN = document.getElementById('buscaNome').value.toLowerCase();
+            const linhas = document.getElementsByClassName('linha-candidato');
+            let visiveis = 0;
+
+            for (let i = 0; i < linhas.length; i++) {{
+                const horarios = linhas[i].getAttribute('data-horarios');
+                const nome = linhas[i].getAttribute('data-nome');
+
+                let bateHorario = (filtroH === "todos") || (horarios.includes(filtroH));
+                let bateNome = nome.includes(buscaN);
+
+                if (bateHorario && bateNome) {{
+                    linhas[i].style.display = "";
+                    visiveis++;
+                }} else {{
+                    linhas[i].style.display = "none";
+                }}
+            }}
+            document.getElementById('contador').innerText = "(" + visiveis + " encontrados)";
+        }}
+        window.onload = filtrarTudo;
+        </script>
 
     </body>
     </html>
     """
-
-
 
 
 @app.get("/resultados/csv")
@@ -367,4 +433,5 @@ def exportar_csv():
     for d in dados: writer.writerow(d)
     output.seek(0)
     return StreamingResponse(output, media_type="text/csv", headers={"Content-Disposition": "attachment; filename=resultados.csv"})
+
 
