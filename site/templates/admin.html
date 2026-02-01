@@ -18,9 +18,10 @@
         .btn-gerar { background: #3498db; color: white; }
         .btn-csv { background: #27ae60; color: white; }
         
-        /* Estilo do Filtro */
-        .filter-container { margin: 20px 0; display: flex; align-items: center; gap: 15px; background: #f9f9f9; padding: 15px; border-radius: 8px; border: 1px solid #eee; }
-        .filter-select { padding: 8px; border-radius: 5px; border: 1px solid #ccc; font-size: 14px; outline: none; }
+        /* Estilo dos Filtros */
+        .filter-container { margin: 20px 0; display: flex; flex-wrap: wrap; align-items: center; gap: 15px; background: #f9f9f9; padding: 15px; border-radius: 8px; border: 1px solid #eee; }
+        .filter-select, .filter-input { padding: 8px; border-radius: 5px; border: 1px solid #ccc; font-size: 14px; outline: none; }
+        .filter-input { flex-grow: 1; min-width: 200px; }
 
         .btn-whatsapp { 
             background-color: #25D366; color: white; padding: 5px 10px; border-radius: 4px; 
@@ -86,15 +87,20 @@
         <h2>📋 Candidatos Interessados</h2>
         
         <div class="filter-container">
-            <strong>🔍 Filtrar por Carga Horária:</strong>
-            <select id="filtroHorario" class="filter-select" onchange="filtrarCandidatos()">
-                <option value="todos">Mostrar Todos</option>
-                <option value="8">Plantão 8h</option>
-                <option value="12">Plantão 12h</option>
-                <option value="24">Plantão 24h</option>
-                <option value="48">Plantão 48h</option>
-            </select>
-            <small id="contadorFiltro" style="color: #666;"></small>
+            <div>
+                <strong>🔍 Plantão:</strong>
+                <select id="filtroHorario" class="filter-select" onchange="filtrarTudo()">
+                    <option value="todos">Todos</option>
+                    <option value="8">8h</option>
+                    <option value="12">12h</option>
+                    <option value="24">24h</option>
+                    <option value="48">48h</option>
+                </select>
+            </div>
+            
+            <input type="text" id="buscaNome" class="filter-input" placeholder="Buscar por nome..." onkeyup="filtrarTudo()">
+            
+            <strong id="contadorFiltro" style="color: #1abc9c;"></strong>
         </div>
 
         <table id="tabelaCandidatos">
@@ -109,14 +115,14 @@
             </thead>
             <tbody>
                 {% for cand in candidatos %}
-                <tr class="linha-candidato" data-horarios="{{ cand.horarios }}">
+                <tr class="linha-candidato" data-horarios="{{ cand.horarios }}" data-nome="{{ cand.nome|lower }}">
                     <td>{{ cand.nome }}</td>
                     <td>
                         <a href="https://wa.me/55{{ cand.telefone|replace('(', '')|replace(')', '')|replace('-', '')|replace(' ', '') }}" target="_blank" class="btn-whatsapp">
-                           📱 {{ cand.telefone }}
+                            📱 {{ cand.telefone }}
                         </a>
                     </td>
-                    <td class="coluna-horario">{{ cand.horarios }}</td>
+                    <td class="coluna-horario"><strong>{{ cand.horarios }}</strong></td>
                     <td>{{ cand.ja_presta_servico }}</td>
                     <td>{{ cand.data_cadastro }}</td>
                 </tr>
@@ -127,34 +133,42 @@
 </div>
 
 <script>
-function filtrarCandidatos() {
-    const filtro = document.getElementById('filtroHorario').value;
+function filtrarTudo() {
+    const filtroH = document.getElementById('filtroHorario').value;
+    const buscaN = document.getElementById('buscaNome').value.toLowerCase();
     const linhas = document.getElementsByClassName('linha-candidato');
     let visiveis = 0;
 
     for (let i = 0; i < linhas.length; i++) {
-        const horariosCandidato = linhas[i].getAttribute('data-horarios'); // Pega o texto dos horários
-        
-        if (filtro === "todos") {
+        const horarios = linhas[i].getAttribute('data-horarios');
+        const nome = linhas[i].getAttribute('data-nome');
+
+        // Lógica para Horário (Aceita 8hrs, 8h, etc)
+        let bateHorario = false;
+        if (filtroH === "todos") {
+            bateHorario = true;
+        } else {
+            // Procura o número do filtro seguido de letras (h ou hrs)
+            const regex = new RegExp(filtroH + "(h|hrs| horas)", "i");
+            if (regex.test(horarios)) bateHorario = true;
+        }
+
+        // Lógica para Nome
+        const bateNome = nome.includes(buscaN);
+
+        // Exibe apenas se bater os dois filtros
+        if (bateHorario && bateNome) {
             linhas[i].style.display = "";
             visiveis++;
         } else {
-            // Verifica se o número do filtro (ex: "8") está dentro do texto dos horários
-            // Usamos uma expressão regular para garantir que "8" não bata com "48"
-            const regex = new RegExp("\\b" + filtro + "h?\\b"); 
-            if (regex.test(horariosCandidato)) {
-                linhas[i].style.display = "";
-                visiveis++;
-            } else {
-                linhas[i].style.display = "none";
-            }
+            linhas[i].style.display = "none";
         }
     }
-    document.getElementById('contadorFiltro').innerText = `Exibindo ${visiveis} candidato(s)`;
+    document.getElementById('contadorFiltro').innerText = `(${visiveis} encontrados)`;
 }
 
-// Inicia o contador ao carregar
-window.onload = filtrarCandidatos;
+// Inicializa ao carregar
+document.addEventListener('DOMContentLoaded', filtrarTudo);
 </script>
 
 </body>
