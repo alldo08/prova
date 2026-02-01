@@ -1,79 +1,109 @@
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <title>Painel de Resultados</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel Administrativo - Santer Saúde</title>
     <style>
-        body { font-family: 'Segoe UI', sans-serif; background: #f8f9fa; margin: 40px; }
-        .container { max-width: 900px; margin: auto; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
-        h1, h2 { color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 10px; }
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #eee; }
-        th { background: #3498db; color: white; }
-        .btn-gerar { background: #27ae60; color: white; border: none; padding: 12px 20px; border-radius: 6px; cursor: pointer; font-size: 16px; transition: 0.3s; }
-        .btn-gerar:hover { background: #219150; }
-        .codigo-box { background: #e9ecef; padding: 10px; border-radius: 5px; font-weight: bold; display: inline-block; margin: 5px; border: 1px solid #ced4da; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f0f2f5; margin: 0; padding: 20px; color: #333; }
+        .container { max-width: 1100px; margin: auto; background: #fff; padding: 30px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
+        h1, h2 { color: #2c3e50; border-bottom: 2px solid #1abc9c; padding-bottom: 10px; }
+        
+        .stats-box { display: flex; gap: 20px; margin-bottom: 30px; }
+        .card { background: #1abc9c; color: white; padding: 20px; border-radius: 8px; flex: 1; text-align: center; }
+        
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; background: white; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }
+        th { background-color: #f8f9fa; color: #555; text-transform: uppercase; font-size: 13px; }
+        tr:hover { background-color: #f1f1f1; }
+
+        .btn { display: inline-block; padding: 10px 20px; border-radius: 5px; text-decoration: none; font-weight: bold; cursor: pointer; border: none; }
+        .btn-gerar { background: #3498db; color: white; }
+        .btn-csv { background: #27ae60; color: white; }
+        
+        .tag-fraude { color: #e74c3c; font-weight: bold; font-size: 12px; }
+        .code-list { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; }
+        .code-item { background: #eee; padding: 5px 10px; border-radius: 4px; font-family: monospace; font-size: 14px; }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>Painel de Controle</h1>
-        
-        <section>
-            <h2>Gerar Novo Código</h2>
-            <form action="/gerar" method="post">
-                <button type="submit" class="btn-gerar">Gerar Código Único (Uso Único)</button>
-            </form>
-            <div style="margin-top: 15px;">
-                <strong>Códigos Disponíveis:</strong><br>
-                {% for c in codigos %}
-                    <span class="codigo-box">{{ c[0] }}</span>
-                {% endfor %}
-            </div>
-        </section>
 
-        <section style="margin-top: 40px;">
-            <h2>Resultados das Provas</h2>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Nome</th>
-                        <th>Código</th>
-                        <th>Nota</th>
-                        <th>Data/Hora</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for r in resultados %}
-                    <tr>
-                        <td><strong>{{ r[0] }}</strong></td>
-                        <td><code>{{ r[1] }}</code></td>
-                        <td>{{ r[2] }} acertos</td>
-                        <td>{{ r[3] }}</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </section>
-    </div>
+<div class="container">
+    <h1>🚀 Painel de Controle Santer Saúde</h1>
+
+    <section>
+        <h2>🔑 Gestão de Códigos</h2>
+        <form action="/gerar" method="post">
+            <button type="submit" class="btn btn-gerar">Gerar Novo Código de Prova</button>
+        </form>
+        <div class="code-list">
+            <strong>Disponíveis:</strong>
+            {% for c in codigos %}
+                <span class="code-item">{{ c.codigo }}</span>
+            {% endfor %}
+        </div>
+    </section>
+
+    <br><hr><br>
+
+    <section>
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <h2>📝 Resultados das Provas</h2>
+            <a href="/resultados/csv" class="btn btn-csv">Baixar CSV de Notas</a>
+        </div>
+        <table>
+            <thead>
+                <tr>
+                    <th>Nome do Candidato</th>
+                    <th>Código Usado</th>
+                    <th>Nota (0-25)</th>
+                    <th>Data e Hora</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for r in resultados %}
+                <tr>
+                    <td>
+                        {{ r.nome }} 
+                        {% if "(FRAUDE)" in r.nome %}<span class="tag-fraude">[FRAUDE DETECTADA]</span>{% endif %}
+                    </td>
+                    <td><code style="background: #fdf9a3; padding: 2px 5px;">{{ r.codigo }}</code></td>
+                    <td><strong>{{ r.nota }}</strong> / 25</td>
+                    <td>{{ r.data }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </section>
+
+    <br><hr><br>
+
+    <section>
+        <h2>📋 Candidatos Interessados (Página /cadastro)</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Nome Completo</th>
+                    <th>WhatsApp/Telefone</th>
+                    <th>Disponibilidade</th>
+                    <th>Já é Santer?</th>
+                    <th>Data Cadastro</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for cand in candidatos %}
+                <tr>
+                    <td>{{ cand.nome }}</td>
+                    <td>{{ cand.telefone }}</td>
+                    <td>{{ cand.horarios }}</td>
+                    <td>{{ cand.ja_presta_servico }}</td>
+                    <td>{{ cand.data_cadastro }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </section>
+</div>
+
 </body>
-<h2>📋 Candidatos Cadastrados</h2>
-<table border="1" style="width:100%; border-collapse: collapse;">
-    <tr style="background: #eee;">
-        <th>Nome</th>
-        <th>Telefone</th>
-        <th>Disponibilidade</th>
-        <th>Já é Santer?</th>
-        <th>Data</th>
-    </tr>
-    {% for c in candidatos %}
-    <tr>
-        <td>{{ c.nome }}</td>
-        <td>{{ c.telefone }}</td>
-        <td>{{ c.horarios }}</td>
-        <td>{{ c.ja_presta_servico }}</td>
-        <td>{{ c.data_cadastro }}</td>
-    </tr>
-    {% endfor %}
-</table>
 </html>
