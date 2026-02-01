@@ -283,7 +283,7 @@ async def ver_resultados(request: Request):
     conn.close()
     
     # Você pode usar o mesmo admin.html ou criar um resultados.html simples
-    return templates.TemplateResponse("admin.html", {
+    return templates.TemplateResponse("resultados.html", {
         "request": request, 
         "resultados": dados, 
         "candidatos": [], # Lista vazia para não dar erro no template
@@ -304,4 +304,5 @@ def exportar_csv():
     for d in dados: writer.writerow(d)
     output.seek(0)
     return StreamingResponse(output, media_type="text/csv", headers={"Content-Disposition": "attachment; filename=resultados.csv"})
+
 
