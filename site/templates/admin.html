@@ -57,4 +57,23 @@
         </section>
     </div>
 </body>
+<h2>📋 Candidatos Cadastrados</h2>
+<table border="1" style="width:100%; border-collapse: collapse;">
+    <tr style="background: #eee;">
+        <th>Nome</th>
+        <th>Telefone</th>
+        <th>Disponibilidade</th>
+        <th>Já é Santer?</th>
+        <th>Data</th>
+    </tr>
+    {% for c in candidatos %}
+    <tr>
+        <td>{{ c.nome }}</td>
+        <td>{{ c.telefone }}</td>
+        <td>{{ c.horarios }}</td>
+        <td>{{ c.ja_presta_servico }}</td>
+        <td>{{ c.data_cadastro }}</td>
+    </tr>
+    {% endfor %}
+</table>
 </html>
