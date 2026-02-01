@@ -14,7 +14,6 @@ from fastapi import FastAPI, Request, Form, HTTPException
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.responses import StreamingResponse
-from fastapi import Response
 
 # =============================
 # CONFIGURAÇÃO
@@ -32,8 +31,9 @@ templates = Jinja2Templates(directory="templates")
 
 async def self_ping():
     """Mantém o Render acordado mandando um pulso interno a cada 40s"""
+    # Substitua pela sua URL real do Render
     url = "https://prova-0rr1.onrender.com/health-check" 
-    await asyncio.sleep(10) 
+    await asyncio.sleep(15) 
     async with httpx.AsyncClient() as client:
         while True:
             try:
@@ -52,7 +52,7 @@ def get_db_connection():
 def init_db():
     conn = get_db_connection()
     cur = conn.cursor()
-    # Tabela de Resultados das Provas
+    # Tabela de Resultados
     cur.execute("""
         CREATE TABLE IF NOT EXISTS resultados (
             id SERIAL PRIMARY KEY,
@@ -62,14 +62,14 @@ def init_db():
             data TEXT NOT NULL
         )
     """)
-    # Tabela de Códigos de Acesso
+    # Tabela de Códigos
     cur.execute("""
         CREATE TABLE IF NOT EXISTS codigos_validos (
             codigo TEXT PRIMARY KEY,
             usado BOOLEAN DEFAULT FALSE
         )
     """)
-    # Tabela de Cadastro de Candidatos
+    # Tabela de Candidatos (Nova)
     cur.execute("""
         CREATE TABLE IF NOT EXISTS candidatos (
             id SERIAL PRIMARY KEY,
@@ -88,21 +88,19 @@ def init_db():
 def startup():
     try:
         init_db()
-        print("Banco inicializado com sucesso")
         asyncio.create_task(self_ping())
+        print("Servidor iniciado e banco ok.")
     except Exception as e:
-        print("Erro ao inicializar banco:", e)
+        print("Erro no startup:", e)
 
 @app.middleware("http")
 async def add_no_cache_headers(request: Request, call_next):
     response = await call_next(request)
     response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
-    response.headers["Pragma"] = "no-cache"
-    response.headers["Expires"] = "0"
     return response
 
 # =============================
-# PERGUNTAS
+# PERGUNTAS (Base de Dados)
 # =============================
 
 PERGUNTAS = [
@@ -134,17 +132,25 @@ PERGUNTAS = [
 ]
 
 # =============================
-# ROTAS PÚBLICAS (CADASTRO E PROVA)
+# ROTAS PÚBLICAS
 # =============================
 
 @app.get("/", response_class=HTMLResponse)
 async def home(request: Request):
-    # O home agora é a página de CADASTRO inicial
+    """Página Inicial: Prova Santer Saúde"""
+    perguntas = deepcopy(PERGUNTAS)
+    random.shuffle(perguntas)
+    for p in perguntas:
+        random.shuffle(p["opcoes"])
+    return templates.TemplateResponse("index.html", {"request": request, "perguntas": perguntas})
+
+@app.get("/cadastro", response_class=HTMLResponse)
+async def pagina_cadastro(request: Request):
+    """Página de Cadastro de Candidatos"""
     return templates.TemplateResponse("cadastro.html", {"request": request})
 
 @app.post("/cadastrar_candidato")
 async def cadastrar_candidato(
-    request: Request,
     nome: str = Form(...),
     telefone: str = Form(...),
     horarios: list = Form(...), 
@@ -163,17 +169,7 @@ async def cadastrar_candidato(
     cur.close()
     conn.close()
     
-    # Após cadastrar, leva para a prova
-    perguntas = deepcopy(PERGUNTAS)
-    random.shuffle(perguntas)
-    for p in perguntas:
-        random.shuffle(p["opcoes"])
-    
-    return templates.TemplateResponse("index.html", {
-        "request": request, 
-        "perguntas": perguntas, 
-        "nome_preenchido": nome 
-    })
+    return HTMLResponse("<script>alert('Cadastro realizado com sucesso!'); window.location.href='/cadastro';</script>")
 
 @app.get("/verificar_codigo/{codigo}")
 async def verificar_codigo(codigo: str):
@@ -183,21 +179,12 @@ async def verificar_codigo(codigo: str):
     result = cur.fetchone()
     cur.close()
     conn.close()
-    
-    if result is None:
-        return {"status": "erro", "mensagem": "Código inexistente."}
-    if result[0] is True:
-        return {"status": "erro", "mensagem": "Este código já foi utilizado."}
-    
+    if result is None: return {"status": "erro", "mensagem": "Inexistente"}
+    if result[0]: return {"status": "erro", "mensagem": "Usado"}
     return {"status": "sucesso"}
 
 @app.post("/submit")
-async def submit(
-    request: Request, 
-    nome: str = Form(...), 
-    codigo: str = Form(...),
-    fraude: str = Form(None)
-):
+async def submit(request: Request, nome: str = Form(...), codigo: str = Form(...), fraude: str = Form(None)):
     codigo = codigo.strip().upper()
     form_data = await request.form()
     foi_fraude = (fraude == "true")
@@ -206,33 +193,27 @@ async def submit(
     
     if not foi_fraude:
         for p in PERGUNTAS:
-            resposta = form_data.get(f"pergunta_{p['id']}")
-            if resposta and resposta.strip() == p["correta"].strip():
+            resp = form_data.get(f"pergunta_{p['id']}")
+            if resp and resp.strip() == p["correta"].strip():
                 acertos += 1
 
     data_atual = datetime.now(timezone_br).strftime("%d/%m/%Y %H:%M")
     conn = get_db_connection()
     cur = conn.cursor()
-    cur.execute(
-        "INSERT INTO resultados (nome, codigo, nota, data) VALUES (%s, %s, %s, %s)",
-        (nome_final, codigo, acertos, data_atual)
-    )
+    cur.execute("INSERT INTO resultados (nome, codigo, nota, data) VALUES (%s, %s, %s, %s)", (nome_final, codigo, acertos, data_atual))
     cur.execute("UPDATE codigos_validos SET usado = TRUE WHERE codigo = %s", (codigo,))
     conn.commit()
     cur.close()
     conn.close()
 
-    return templates.TemplateResponse(
-        "resultado.html",
-        {"request": request, "nome": nome_final, "acertos": acertos, "total": len(PERGUNTAS), "fraude": foi_fraude}
-    )
+    return templates.TemplateResponse("resultado.html", {"request": request, "nome": nome_final, "acertos": acertos, "total": len(PERGUNTAS), "fraude": foi_fraude})
 
 @app.get("/health-check")
 async def health_check():
     return {"status": "still_alive"}
 
 # =============================
-# ÁREA ADMINISTRATIVA
+# ADMINISTRAÇÃO
 # =============================
 
 @app.get("/login", response_class=HTMLResponse)
@@ -240,15 +221,15 @@ async def login_page():
     return """
 <!DOCTYPE html>
 <html lang="pt-BR">
-<head><meta charset="UTF-8"><title>Login Admin</title></head>
-<body style="margin:0;height:100vh;display:flex;justify-content:center;align-items:center;background:#0f2027;font-family:sans-serif;">
-<div style="background:#fff;width:300px;padding:40px;border-radius:10px;">
-<h2 style="text-align:center;">🔐 Admin</h2>
-<form action="/admin" method="post">
-    <input name="user" placeholder="Usuário" required style="width:100%;padding:10px;margin-bottom:10px;">
-    <input type="password" name="password" placeholder="Senha" required style="width:100%;padding:10px;margin-bottom:20px;">
-    <button type="submit" style="width:100%;padding:10px;background:#2c5364;color:white;border:none;cursor:pointer;">Entrar</button>
-</form>
+<head><meta charset="UTF-8"><title>Login</title></head>
+<body style="display:flex; justify-content:center; align-items:center; height:100vh; background:#2c3e50; font-family:sans-serif;">
+<div style="background:#fff; padding:30px; border-radius:10px;">
+    <h2>Painel Admin</h2>
+    <form action="/admin" method="post">
+        <input name="user" placeholder="Usuário" required style="width:100%; margin-bottom:10px; padding:8px;"><br>
+        <input type="password" name="password" placeholder="Senha" required style="width:100%; margin-bottom:20px; padding:8px;"><br>
+        <button type="submit" style="width:100%; padding:10px; background:#1abc9c; color:white; border:none; cursor:pointer;">Entrar</button>
+    </form>
 </div>
 </body>
 </html>
@@ -256,36 +237,26 @@ async def login_page():
 
 @app.post("/admin")
 async def admin_login(user: str = Form(...), password: str = Form(...)):
-    if user != "leandro" or password != "14562917776":
-        return HTMLResponse("<script>alert('Erro');window.location.href='/login';</script>")
-    response = RedirectResponse("/admin", status_code=303)
-    response.set_cookie("admin", "logado", httponly=True)
-    return response
+    if user == "leandro" and password == "14562917776":
+        response = RedirectResponse("/admin", status_code=303)
+        response.set_cookie("admin", "logado", httponly=True)
+        return response
+    return RedirectResponse("/login")
 
 @app.get("/admin", response_class=HTMLResponse)
 async def admin_panel(request: Request):
     if request.cookies.get("admin") != "logado": return RedirectResponse("/login")
-    
     conn = get_db_connection()
     cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
-    
     cur.execute("SELECT * FROM resultados ORDER BY id DESC")
     resultados = cur.fetchall()
-    
     cur.execute("SELECT * FROM candidatos ORDER BY id DESC")
     candidatos = cur.fetchall()
-    
     cur.execute("SELECT codigo FROM codigos_validos WHERE usado = false")
     codigos = cur.fetchall()
-    
     cur.close()
     conn.close()
-    return templates.TemplateResponse("admin.html", {
-        "request": request, 
-        "resultados": resultados, 
-        "candidatos": candidatos, 
-        "codigos": codigos
-    })
+    return templates.TemplateResponse("admin.html", {"request": request, "resultados": resultados, "candidatos": candidatos, "codigos": codigos})
 
 @app.post("/gerar")
 async def gerar_codigo():
@@ -299,7 +270,7 @@ async def gerar_codigo():
     return RedirectResponse(url="/admin", status_code=303)
 
 @app.get("/resultados/csv")
-def exportar_resultados_csv():
+def exportar_csv():
     conn = get_db_connection()
     cur = conn.cursor()
     cur.execute("SELECT nome, codigo, nota, data FROM resultados ORDER BY id DESC")
