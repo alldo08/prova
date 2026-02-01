@@ -76,6 +76,53 @@ def init_db():
     cur.close()
     conn.close()
 
+    conn = get_db_connection()
+        cur = conn.cursor()
+        # ... tabelas anteriores ...
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS candidatos (
+                id SERIAL PRIMARY KEY,
+                nome TEXT NOT NULL,
+                telefone TEXT NOT NULL,
+                horarios TEXT NOT NULL,
+                ja_presta_servico TEXT NOT NULL,
+                data_cadastro TEXT NOT NULL
+            )
+        """)
+        conn.commit()
+        cur.close()
+        conn.close()
+
+
+@app.get("/cadastro", response_class=HTMLResponse)
+async def pagina_cadastro(request: Request):
+    return templates.TemplateResponse("cadastro.html", {"request": request})
+
+# ROTA PARA PROCESSAR O FORMULÁRIO
+@app.post("/cadastrar_candidato")
+async def cadastrar_candidato(
+    nome: str = Form(...),
+    telefone: str = Form(...),
+    horarios: list = Form(...), # Recebe as caixinhas marcadas como lista
+    servico: str = Form(...)
+):
+    horarios_str = ", ".join(horarios) # Transforma ["12h", "24h"] em "12h, 24h"
+    data_atual = datetime.now(timezone_br).strftime("%d/%m/%Y %H:%M")
+    
+    conn = get_db_connection()
+    cur = conn.cursor()
+    cur.execute(
+        "INSERT INTO candidatos (nome, telefone, horarios, ja_presta_servico, data_cadastro) VALUES (%s, %s, %s, %s, %s)",
+        (nome, telefone, horarios_str, servico, data_atual)
+    )
+    conn.commit()
+    cur.close()
+    conn.close()
+    
+    # Após cadastrar, envia ele para a página da prova
+    return RedirectResponse(url="/", status_code=303)
+
+
 @app.on_event("startup")
 def startup():
     try:
@@ -281,6 +328,7 @@ def exportar_resultados_csv():
 @app.get("/health-check")
 async def health_check():
     return {"status": "still_alive"}
+
 
 
 
