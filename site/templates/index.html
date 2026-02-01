@@ -247,7 +247,6 @@
                     document.getElementById('timer-box').style.display = 'block';
                     mostrarPasso(1); 
                     cronometro = setInterval(atualizarTimer, 1000);
-                    document.getElementById('btnAdmin').style.display = 'none';
                 } else { alert(data.mensagem); }
             } catch (e) { alert("Erro de conexão."); }
         }
@@ -281,5 +280,6 @@
     </script>
 </body>
 </html>
+
 
 
