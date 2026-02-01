@@ -1,1 +1,48 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cadastro - Santer Saúde</title>
+    <style>
+        body { font-family: sans-serif; background-color: #f4f4f9; display: flex; justify-content: center; padding: 40px 20px; }
+        .card { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); width: 100%; max-width: 450px; }
+        h2 { color: #2c3e50; text-align: center; }
+        label { display: block; margin-top: 15px; font-weight: bold; color: #555; }
+        input[type="text"], input[type="tel"] { width: 100%; padding: 12px; margin-top: 5px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; }
+        .checkbox-group, .radio-group { margin-top: 10px; background: #f9f9f9; padding: 15px; border-radius: 8px; }
+        .option { display: flex; align-items: center; margin-bottom: 10px; cursor: pointer; }
+        .option input { margin-right: 10px; transform: scale(1.2); }
+        button { width: 100%; background: #1abc9c; color: white; border: none; padding: 15px; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 20px; transition: 0.3s; }
+        button:hover { background: #16a085; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h2>Cadastro de Profissional</h2>
+        <form action="/cadastrar_candidato" method="post">
+            <label>Nome Completo:</label>
+            <input type="text" name="nome" required placeholder="Digite seu nome">
 
+            <label>Telefone / WhatsApp:</label>
+            <input type="tel" name="telefone" required placeholder="(00) 00000-0000">
+
+            <label>Horários disponíveis para plantão:</label>
+            <div class="checkbox-group">
+                <label class="option"><input type="checkbox" name="horarios" value="8hrs"> 8 Horas</label>
+                <label class="option"><input type="checkbox" name="horarios" value="12hrs"> 12 Horas</label>
+                <label class="option"><input type="checkbox" name="horarios" value="24hrs"> 24 Horas</label>
+                <label class="option"><input type="checkbox" name="horarios" value="48hrs"> 48 Horas</label>
+            </div>
+
+            <label>Você já presta serviços para a Santer Saúde?</label>
+            <div class="radio-group">
+                <label class="option"><input type="radio" name="servico" value="Sim" required> Sim</label>
+                <label class="option"><input type="radio" name="servico" value="Não"> Não</label>
+            </div>
+
+            <button type="submit">Salvar e Ir para a Prova</button>
+        </form>
+    </div>
+</body>
+</html>
