@@ -18,18 +18,13 @@
         .btn-gerar { background: #3498db; color: white; }
         .btn-csv { background: #27ae60; color: white; }
         
-        /* Botão do WhatsApp */
+        /* Estilo do Filtro */
+        .filter-container { margin: 20px 0; display: flex; align-items: center; gap: 15px; background: #f9f9f9; padding: 15px; border-radius: 8px; border: 1px solid #eee; }
+        .filter-select { padding: 8px; border-radius: 5px; border: 1px solid #ccc; font-size: 14px; outline: none; }
+
         .btn-whatsapp { 
-            background-color: #25D366; 
-            color: white; 
-            padding: 5px 10px; 
-            border-radius: 4px; 
-            text-decoration: none; 
-            font-size: 12px; 
-            font-weight: bold;
-            display: inline-flex;
-            align-items: center;
-            gap: 5px;
+            background-color: #25D366; color: white; padding: 5px 10px; border-radius: 4px; 
+            text-decoration: none; font-size: 12px; font-weight: bold; display: inline-flex; align-items: center; gap: 5px;
         }
         .btn-whatsapp:hover { background-color: #128C7E; }
 
@@ -75,10 +70,7 @@
             <tbody>
                 {% for r in resultados %}
                 <tr>
-                    <td>
-                        {{ r.nome }} 
-                        {% if "(FRAUDE)" in r.nome %}<span class="tag-fraude">[FRAUDE DETECTADA]</span>{% endif %}
-                    </td>
+                    <td>{{ r.nome }} {% if "(FRAUDE)" in r.nome %}<span class="tag-fraude">[FRAUDE]</span>{% endif %}</td>
                     <td><code style="background: #fdf9a3; padding: 2px 5px;">{{ r.codigo }}</code></td>
                     <td><strong>{{ r.nota }}</strong> / 25</td>
                     <td>{{ r.data }}</td>
@@ -91,8 +83,21 @@
     <br><hr><br>
 
     <section>
-        <h2>📋 Candidatos Interessados (Página /cadastro)</h2>
-        <table>
+        <h2>📋 Candidatos Interessados</h2>
+        
+        <div class="filter-container">
+            <strong>🔍 Filtrar por Carga Horária:</strong>
+            <select id="filtroHorario" class="filter-select" onchange="filtrarCandidatos()">
+                <option value="todos">Mostrar Todos</option>
+                <option value="8">Plantão 8h</option>
+                <option value="12">Plantão 12h</option>
+                <option value="24">Plantão 24h</option>
+                <option value="48">Plantão 48h</option>
+            </select>
+            <small id="contadorFiltro" style="color: #666;"></small>
+        </div>
+
+        <table id="tabelaCandidatos">
             <thead>
                 <tr>
                     <th>Nome Completo</th>
@@ -104,16 +109,14 @@
             </thead>
             <tbody>
                 {% for cand in candidatos %}
-                <tr>
+                <tr class="linha-candidato" data-horarios="{{ cand.horarios }}">
                     <td>{{ cand.nome }}</td>
                     <td>
-                        <a href="https://wa.me/55{{ cand.telefone|replace('(', '')|replace(')', '')|replace('-', '')|replace(' ', '') }}" 
-                           target="_blank" 
-                           class="btn-whatsapp">
+                        <a href="https://wa.me/55{{ cand.telefone|replace('(', '')|replace(')', '')|replace('-', '')|replace(' ', '') }}" target="_blank" class="btn-whatsapp">
                            📱 {{ cand.telefone }}
                         </a>
                     </td>
-                    <td>{{ cand.horarios }}</td>
+                    <td class="coluna-horario">{{ cand.horarios }}</td>
                     <td>{{ cand.ja_presta_servico }}</td>
                     <td>{{ cand.data_cadastro }}</td>
                 </tr>
@@ -123,6 +126,36 @@
     </section>
 </div>
 
+<script>
+function filtrarCandidatos() {
+    const filtro = document.getElementById('filtroHorario').value;
+    const linhas = document.getElementsByClassName('linha-candidato');
+    let visiveis = 0;
+
+    for (let i = 0; i < linhas.length; i++) {
+        const horariosCandidato = linhas[i].getAttribute('data-horarios'); // Pega o texto dos horários
+        
+        if (filtro === "todos") {
+            linhas[i].style.display = "";
+            visiveis++;
+        } else {
+            // Verifica se o número do filtro (ex: "8") está dentro do texto dos horários
+            // Usamos uma expressão regular para garantir que "8" não bata com "48"
+            const regex = new RegExp("\\b" + filtro + "h?\\b"); 
+            if (regex.test(horariosCandidato)) {
+                linhas[i].style.display = "";
+                visiveis++;
+            } else {
+                linhas[i].style.display = "none";
+            }
+        }
+    }
+    document.getElementById('contadorFiltro').innerText = `Exibindo ${visiveis} candidato(s)`;
+}
+
+// Inicia o contador ao carregar
+window.onload = filtrarCandidatos;
+</script>
+
 </body>
 </html>
-
