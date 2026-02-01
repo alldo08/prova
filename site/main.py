@@ -269,27 +269,6 @@ async def gerar_codigo():
     conn.close()
     return RedirectResponse(url="/admin", status_code=303)
 
-@app.get("/resultados", response_class=HTMLResponse)
-async def ver_resultados(request: Request):
-    # Proteção: opcionalmente você pode exigir que esteja logado como admin aqui também
-    if request.cookies.get("admin") != "logado":
-        return RedirectResponse("/login")
-        
-    conn = get_db_connection()
-    cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
-    cur.execute("SELECT nome, nota, data FROM resultados ORDER BY id DESC")
-    dados = cur.fetchall()
-    cur.close()
-    conn.close()
-    
-    # Você pode usar o mesmo admin.html ou criar um resultados.html simples
-    return templates.TemplateResponse("resultados.html", {
-        "request": request, 
-        "resultados": dados, 
-        "candidatos": [], # Lista vazia para não dar erro no template
-        "codigos": [] 
-    })
-
 @app.get("/resultados/csv")
 def exportar_csv():
     conn = get_db_connection()
@@ -304,5 +283,3 @@ def exportar_csv():
     for d in dados: writer.writerow(d)
     output.seek(0)
     return StreamingResponse(output, media_type="text/csv", headers={"Content-Disposition": "attachment; filename=resultados.csv"})
-
-
