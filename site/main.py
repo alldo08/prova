@@ -269,6 +269,90 @@ async def gerar_codigo():
     conn.close()
     return RedirectResponse(url="/admin", status_code=303)
 
+@app.get("/resultados", response_class=HTMLResponse)
+async def resultados_publicos():
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        SELECT
+            nome,
+            codigo,
+            nota,
+            data
+        FROM resultados
+        ORDER BY
+            nota DESC,
+            TO_TIMESTAMP(data, 'DD/MM/YYYY HH24:MI') ASC
+    """)
+
+    dados = cursor.fetchall()
+
+    cursor.close()
+    conn.close()
+
+    linhas = ""
+    for nome, codigo, nota, data in dados:
+        linhas += f"""
+        <tr>
+            <td>{nome}</td>
+            <td>{codigo}</td>
+            <td>{nota}</td>
+            <td>{data}</td>
+        </tr>
+        """
+
+    return f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="utf-8">
+        <title>Resultados da Prova</title>
+    </head>
+    <body style="font-family:Arial; background:#f4f6f8; padding:30px">
+
+        <div style="max-width:900px;margin:auto">
+
+            <div style="display:flex;justify-content:space-between;align-items:center">
+                <h2>Resultados da Prova</h2>
+
+                <a href="/resultados/csv" style="
+                    background:#2a5298;
+                    color:white;
+                    padding:10px 16px;
+                    border-radius:6px;
+                    text-decoration:none;
+                    font-weight:bold;
+                ">
+                    ⬇ Exportar CSV
+                </a>
+            </div>
+
+            <table style="
+                width:100%;
+                margin-top:15px;
+                border-collapse:collapse;
+                background:white;
+                box-shadow:0 10px 30px rgba(0,0,0,.1)
+            ">
+                <tr style="background:#2a5298;color:white">
+                    <th style="padding:12px">Nome</th>
+                    <th>Código</th>
+                    <th>Nota</th>
+                    <th>Data</th>
+                </tr>
+                {linhas}
+            </table>
+
+        </div>
+
+    </body>
+    </html>
+    """
+
+
+
+
 @app.get("/resultados/csv")
 def exportar_csv():
     conn = get_db_connection()
@@ -283,3 +367,4 @@ def exportar_csv():
     for d in dados: writer.writerow(d)
     output.seek(0)
     return StreamingResponse(output, media_type="text/csv", headers={"Content-Disposition": "attachment; filename=resultados.csv"})
+
