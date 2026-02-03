@@ -308,12 +308,10 @@ async def gerar_codigo():
 
 @app.get("/resultados", response_class=HTMLResponse)
 async def resultados_publicos(request: Request):
-    # Verifica se o admin está logado (opcional, já que você chamou de resultados_publicos)
     if request.cookies.get("admin") != "logado":
         return RedirectResponse("/login")
 
     conn = get_db_connection()
-    # Usando DictCursor para facilitar a leitura das colunas
     cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
 
     # 1. Busca Resultados da Prova
@@ -324,8 +322,12 @@ async def resultados_publicos(request: Request):
     """)
     dados_provas = cur.fetchall()
 
-    # 2. Busca Candidatos Cadastrados
-    cur.execute("SELECT nome, telefone, horarios, ja_presta_servico, data_cadastro FROM candidatos ORDER BY id DESC")
+    # 2. Busca Candidatos (Adicionado tipo_plantao e turno)
+    cur.execute("""
+        SELECT nome, telefone, horarios, ja_presta_servico, data_cadastro, tipo_plantao, turno 
+        FROM candidatos 
+        ORDER BY id DESC
+    """)
     dados_candidatos = cur.fetchall()
 
     cur.close()
@@ -344,13 +346,20 @@ async def resultados_publicos(request: Request):
         </tr>
         """
 
-    # Gerar linhas da tabela de CANDIDATOS com link WhatsApp
+    # Gerar linhas da tabela de CANDIDATOS (Adicionado atributos de data para o filtro)
     linhas_candidatos = ""
     for c in dados_candidatos:
-        # Limpar telefone para o link
         tel_limpo = c['telefone'].replace('(','').replace(')','').replace('-','').replace(' ','')
+        # Garantindo que valores nulos não quebrem o .lower()
+        tipo = (c['tipo_plantao'] or "").lower()
+        turno = (c['turno'] or "").lower()
+        
         linhas_candidatos += f"""
-        <tr class="linha-candidato" data-horarios="{c['horarios'].lower()}" data-nome="{c['nome'].lower()}">
+        <tr class="linha-candidato" 
+            data-horarios="{c['horarios'].lower()}" 
+            data-nome="{c['nome'].lower()}"
+            data-tipo="{tipo}"
+            data-turno="{turno}">
             <td style="padding:12px; border-bottom:1px solid #eee">{c['nome']}</td>
             <td style="padding:12px; border-bottom:1px solid #eee">
                 <a href="https://wa.me/55{tel_limpo}" target="_blank" style="background:#25D366; color:white; padding:4px 8px; border-radius:4px; text-decoration:none; font-size:12px">
@@ -358,8 +367,9 @@ async def resultados_publicos(request: Request):
                 </a>
             </td>
             <td style="padding:12px; border-bottom:1px solid #eee"><strong>{c['horarios']}</strong></td>
+            <td style="padding:12px; border-bottom:1px solid #eee; font-size:12px">{c['tipo_plantao'] or ''} / {c['turno'] or ''}</td>
             <td style="padding:12px; border-bottom:1px solid #eee">{c['ja_presta_servico']}</td>
-            <td style="padding:12px; border-bottom:1px solid #eee">{c['data_cadastro']}</td>
+            <td style="padding:12px; border-bottom:1px solid #eee; font-size:11px; color:#888">{c['data_cadastro']}</td>
         </tr>
         """
 
@@ -370,46 +380,46 @@ async def resultados_publicos(request: Request):
         <meta charset="utf-8">
         <title>Painel de Resultados - Santer Saúde</title>
         <style>
-            .filter-box {{ background:white; padding:15px; margin-bottom:15px; border-radius:8px; box-shadow:0 2px 10px rgba(0,0,0,0.05); display:flex; gap:10px; align-items:center; }}
+            .filter-box {{ background:white; padding:15px; margin-bottom:15px; border-radius:8px; box-shadow:0 2px 10px rgba(0,0,0,0.05); display:flex; gap:10px; align-items:center; flex-wrap:wrap; }}
             input, select {{ padding:8px; border-radius:5px; border:1px solid #ccc; }}
             th {{ text-align:left; padding:12px; }}
+            .linha-candidato:hover {{ background:#f9f9f9; }}
         </style>
     </head>
     <body style="font-family:Arial, sans-serif; background:#f4f6f8; padding:30px">
 
         <div style="max-width:1100px; margin:auto">
-
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px">
-                <h2 style="color:#2a5298">📝 Resultados das Provas</h2>
-                <a href="/resultados/csv" style="background:#2a5298; color:white; padding:10px 16px; border-radius:6px; text-decoration:none; font-weight:bold;">
-                    ⬇ Exportar CSV
-                </a>
-            </div>
-
+            <h2 style="color:#2a5298">📝 Resultados das Provas</h2>
             <table style="width:100%; border-collapse:collapse; background:white; box-shadow:0 10px 30px rgba(0,0,0,.1); margin-bottom:50px">
                 <tr style="background:#2a5298; color:white">
-                    <th>Nome</th>
-                    <th>Código</th>
-                    <th>Nota</th>
-                    <th>Data</th>
+                    <th>Nome</th><th>Código</th><th>Nota</th><th>Data</th>
                 </tr>
                 {linhas_provas}
             </table>
 
-            <hr style="border:0; border-top:2px solid #ccc; margin:40px 0">
-
             <h2 style="color:#1abc9c">📋 Candidatos Interessados</h2>
 
             <div class="filter-box">
-                <strong>🔍 Filtrar:</strong>
+                <strong>🔍 Filtros:</strong>
+                <input type="text" id="buscaNome" placeholder="Nome..." onkeyup="filtrarTudo()" style="width:200px">
+                
                 <select id="filtroHorario" onchange="filtrarTudo()">
-                    <option value="todos">Todos os Plantões</option>
-                    <option value="8">8h</option>
-                    <option value="12">12h</option>
-                    <option value="24">24h</option>
-                    <option value="48">48h</option>
+                    <option value="todos">Carga: Todas</option>
+                    <option value="8">8h</option><option value="12">12h</option><option value="24">24h</option><option value="48">48h</option>
                 </select>
-                <input type="text" id="buscaNome" placeholder="Buscar por nome..." onkeyup="filtrarTudo()" style="flex-grow:1">
+
+                <select id="filtroTipo" onchange="filtrarTudo()">
+                    <option value="todos">Vínculo: Todos</option>
+                    <option value="fixo">Fixo</option>
+                    <option value="coringa">Coringa</option>
+                </select>
+
+                <select id="filtroTurno" onchange="filtrarTudo()">
+                    <option value="todos">Turno: Todos</option>
+                    <option value="diurno">Diurno</option>
+                    <option value="noturno">Noturno</option>
+                </select>
+
                 <span id="contador" style="font-weight:bold; color:#1abc9c"></span>
             </div>
 
@@ -418,6 +428,7 @@ async def resultados_publicos(request: Request):
                     <th style="padding:12px">Nome</th>
                     <th>WhatsApp</th>
                     <th>Disponibilidade</th>
+                    <th>Tipo/Turno</th>
                     <th>É Santer?</th>
                     <th>Data Cadastro</th>
                 </tr>
@@ -427,19 +438,26 @@ async def resultados_publicos(request: Request):
 
         <script>
         function filtrarTudo() {{
-            const filtroH = document.getElementById('filtroHorario').value;
             const buscaN = document.getElementById('buscaNome').value.toLowerCase();
+            const filtroH = document.getElementById('filtroHorario').value;
+            const filtroT = document.getElementById('filtroTipo').value;
+            const filtroTur = document.getElementById('filtroTurno').value;
+            
             const linhas = document.getElementsByClassName('linha-candidato');
             let visiveis = 0;
 
             for (let i = 0; i < linhas.length; i++) {{
-                const horarios = linhas[i].getAttribute('data-horarios');
                 const nome = linhas[i].getAttribute('data-nome');
+                const horarios = linhas[i].getAttribute('data-horarios');
+                const tipo = linhas[i].getAttribute('data-tipo');
+                const turno = linhas[i].getAttribute('data-turno');
 
-                let bateHorario = (filtroH === "todos") || (horarios.includes(filtroH));
-                let bateNome = nome.includes(buscaN);
+                const bateNome = nome.includes(buscaN);
+                const bateHorario = (filtroH === "todos") || (horarios.includes(filtroH));
+                const bateTipo = (filtroT === "todos") || (tipo.includes(filtroT));
+                const bateTurno = (filtroTur === "todos") || (turno.includes(filtroTur));
 
-                if (bateHorario && bateNome) {{
+                if (bateNome && bateHorario && bateTipo && bateTurno) {{
                     linhas[i].style.display = "";
                     visiveis++;
                 }} else {{
@@ -450,11 +468,9 @@ async def resultados_publicos(request: Request):
         }}
         window.onload = filtrarTudo;
         </script>
-
     </body>
     </html>
     """
-
 
 @app.get("/resultados/csv")
 def exportar_csv():
@@ -470,6 +486,7 @@ def exportar_csv():
     for d in dados: writer.writerow(d)
     output.seek(0)
     return StreamingResponse(output, media_type="text/csv", headers={"Content-Disposition": "attachment; filename=resultados.csv"})
+
 
 
 
