@@ -6,32 +6,30 @@
     <title>Painel Administrativo - Santer Saúde</title>
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f0f2f5; margin: 0; padding: 20px; color: #333; }
-        .container { max-width: 1100px; margin: auto; background: #fff; padding: 30px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
+        .container { max-width: 1200px; margin: auto; background: #fff; padding: 30px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
         h1, h2 { color: #2c3e50; border-bottom: 2px solid #1abc9c; padding-bottom: 10px; }
         
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; background: white; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; background: white; font-size: 14px; }
         th, td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }
-        th { background-color: #f8f9fa; color: #555; text-transform: uppercase; font-size: 13px; }
+        th { background-color: #f8f9fa; color: #555; text-transform: uppercase; font-size: 12px; }
         tr:hover { background-color: #f1f1f1; }
 
         .btn { display: inline-block; padding: 10px 20px; border-radius: 5px; text-decoration: none; font-weight: bold; cursor: pointer; border: none; font-size: 14px; }
         .btn-gerar { background: #3498db; color: white; }
         .btn-csv { background: #27ae60; color: white; }
         
-        /* Estilo dos Filtros */
-        .filter-container { margin: 20px 0; display: flex; flex-wrap: wrap; align-items: center; gap: 15px; background: #f9f9f9; padding: 15px; border-radius: 8px; border: 1px solid #eee; }
-        .filter-select, .filter-input { padding: 8px; border-radius: 5px; border: 1px solid #ccc; font-size: 14px; outline: none; }
-        .filter-input { flex-grow: 1; min-width: 200px; }
+        .filter-container { margin: 20px 0; display: flex; flex-wrap: wrap; align-items: center; gap: 10px; background: #f9f9f9; padding: 15px; border-radius: 8px; border: 1px solid #eee; }
+        .filter-select, .filter-input { padding: 8px; border-radius: 5px; border: 1px solid #ccc; font-size: 13px; outline: none; }
+        .filter-input { flex-grow: 1; min-width: 150px; }
 
         .btn-whatsapp { 
             background-color: #25D366; color: white; padding: 5px 10px; border-radius: 4px; 
-            text-decoration: none; font-size: 12px; font-weight: bold; display: inline-flex; align-items: center; gap: 5px;
+            text-decoration: none; font-size: 11px; font-weight: bold; display: inline-flex; align-items: center; gap: 5px;
         }
         .btn-whatsapp:hover { background-color: #128C7E; }
 
-        .tag-fraude { color: #e74c3c; font-weight: bold; font-size: 12px; }
-        .code-list { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; }
-        .code-item { background: #eee; padding: 5px 10px; border-radius: 4px; font-family: monospace; font-size: 14px; }
+        .tag-tipo { background: #e1f5fe; color: #0288d1; padding: 2px 6px; border-radius: 4px; font-weight: bold; font-size: 11px; }
+        .tag-turno { background: #fff3e0; color: #f57c00; padding: 2px 6px; border-radius: 4px; font-weight: bold; font-size: 11px; }
     </style>
 </head>
 <body>
@@ -44,12 +42,6 @@
         <form action="/gerar" method="post">
             <button type="submit" class="btn btn-gerar">Gerar Novo Código de Prova</button>
         </form>
-        <div class="code-list">
-            <strong>Disponíveis:</strong>
-            {% for c in codigos %}
-                <span class="code-item">{{ c.codigo }}</span>
-            {% endfor %}
-        </div>
     </section>
 
     <br><hr><br>
@@ -57,23 +49,23 @@
     <section>
         <div style="display: flex; justify-content: space-between; align-items: center;">
             <h2>📝 Resultados das Provas</h2>
-            <a href="/resultados/csv" class="btn btn-csv">Baixar CSV de Notas</a>
+            <a href="/resultados/csv" class="btn btn-csv">Baixar CSV</a>
         </div>
         <table>
             <thead>
                 <tr>
-                    <th>Nome do Candidato</th>
-                    <th>Código Usado</th>
+                    <th>Nome</th>
+                    <th>Código</th>
                     <th>Nota (0-25)</th>
-                    <th>Data e Hora</th>
+                    <th>Data</th>
                 </tr>
             </thead>
             <tbody>
                 {% for r in resultados %}
                 <tr>
-                    <td>{{ r.nome }} {% if "(FRAUDE)" in r.nome %}<span class="tag-fraude">[FRAUDE]</span>{% endif %}</td>
+                    <td>{{ r.nome }}</td>
                     <td><code style="background: #fdf9a3; padding: 2px 5px;">{{ r.codigo }}</code></td>
-                    <td><strong>{{ r.nota }}</strong> / 25</td>
+                    <td><strong>{{ r.nota }}</strong></td>
                     <td>{{ r.data }}</td>
                 </tr>
                 {% endfor %}
@@ -84,47 +76,65 @@
     <br><hr><br>
 
     <section>
-        <h2>📋 Candidatos Interessados</h2>
+        <h2>📋 Candidatos e Preferências</h2>
         
         <div class="filter-container">
-            <div>
-                <strong>🔍 Plantão:</strong>
-                <select id="filtroHorario" class="filter-select" onchange="filtrarTudo()">
-                    <option value="todos">Todos</option>
-                    <option value="8">8h</option>
-                    <option value="12">12h</option>
-                    <option value="24">24h</option>
-                    <option value="48">48h</option>
-                </select>
-            </div>
-            
             <input type="text" id="buscaNome" class="filter-input" placeholder="Buscar por nome..." onkeyup="filtrarTudo()">
             
-            <strong id="contadorFiltro" style="color: #1abc9c;"></strong>
+            <select id="filtroHorario" class="filter-select" onchange="filtrarTudo()">
+                <option value="todos">Carga: Todas</option>
+                <option value="8">8h</option>
+                <option value="12">12h</option>
+                <option value="24">24h</option>
+                <option value="48">48h</option>
+            </select>
+
+            <select id="filtroTipo" class="filter-select" onchange="filtrarTudo()">
+                <option value="todos">Tipo: Todos</option>
+                <option value="fixo">Fixo</option>
+                <option value="coringa">Coringa</option>
+            </select>
+
+            <select id="filtroTurno" class="filter-select" onchange="filtrarTudo()">
+                <option value="todos">Turno: Todos</option>
+                <option value="diurno">Diurno</option>
+                <option value="noturno">Noturno</option>
+            </select>
+            
+            <strong id="contadorFiltro" style="color: #1abc9c; font-size: 13px;"></strong>
         </div>
 
         <table id="tabelaCandidatos">
             <thead>
                 <tr>
                     <th>Nome Completo</th>
-                    <th>WhatsApp/Telefone</th>
-                    <th>Disponibilidade</th>
-                    <th>Já é Santer?</th>
-                    <th>Data Cadastro</th>
+                    <th>WhatsApp</th>
+                    <th>Carga</th>
+                    <th>Vínculo</th>
+                    <th>Turno</th>
+                    <th>Santer?</th>
+                    <th>Cadastro</th>
                 </tr>
             </thead>
             <tbody>
                 {% for cand in candidatos %}
-                <tr class="linha-candidato" data-horarios="{{ cand.horarios }}" data-nome="{{ cand.nome|lower }}">
+                <tr class="linha-candidato" 
+                    data-horarios="{{ cand.horarios|lower }}" 
+                    data-nome="{{ cand.nome|lower }}"
+                    data-tipo="{{ cand.tipo_plantao|lower }}"
+                    data-turno="{{ cand.turno|lower }}">
+                    
                     <td>{{ cand.nome }}</td>
                     <td>
                         <a href="https://wa.me/55{{ cand.telefone|replace('(', '')|replace(')', '')|replace('-', '')|replace(' ', '') }}" target="_blank" class="btn-whatsapp">
-                            📱 {{ cand.telefone }}
+                            📱 WhatsApp
                         </a>
                     </td>
-                    <td class="coluna-horario"><strong>{{ cand.horarios }}</strong></td>
+                    <td><strong>{{ cand.horarios }}</strong></td>
+                    <td><span class="tag-tipo">{{ cand.tipo_plantao }}</span></td>
+                    <td><span class="tag-turno">{{ cand.turno }}</span></td>
                     <td>{{ cand.ja_presta_servico }}</td>
-                    <td>{{ cand.data_cadastro }}</td>
+                    <td style="font-size: 11px; color: #888;">{{ cand.data_cadastro }}</td>
                 </tr>
                 {% endfor %}
             </tbody>
@@ -134,30 +144,38 @@
 
 <script>
 function filtrarTudo() {
-    const filtroH = document.getElementById('filtroHorario').value;
     const buscaN = document.getElementById('buscaNome').value.toLowerCase();
+    const filtroH = document.getElementById('filtroHorario').value;
+    const filtroTipo = document.getElementById('filtroTipo').value;
+    const filtroTurno = document.getElementById('filtroTurno').value;
+    
     const linhas = document.getElementsByClassName('linha-candidato');
     let visiveis = 0;
 
     for (let i = 0; i < linhas.length; i++) {
-        const horarios = linhas[i].getAttribute('data-horarios');
         const nome = linhas[i].getAttribute('data-nome');
+        const horarios = linhas[i].getAttribute('data-horarios');
+        const tipo = linhas[i].getAttribute('data-tipo');
+        const turno = linhas[i].getAttribute('data-turno');
 
-        // Lógica para Horário (Aceita 8hrs, 8h, etc)
-        let bateHorario = false;
-        if (filtroH === "todos") {
-            bateHorario = true;
-        } else {
-            // Procura o número do filtro seguido de letras (h ou hrs)
+        // Lógica Nome
+        const bateNome = nome.includes(buscaN);
+
+        // Lógica Horário
+        let bateHorario = (filtroH === "todos");
+        if (!bateHorario) {
             const regex = new RegExp(filtroH + "(h|hrs| horas)", "i");
             if (regex.test(horarios)) bateHorario = true;
         }
 
-        // Lógica para Nome
-        const bateNome = nome.includes(buscaN);
+        // Lógica Tipo (Fixo/Coringa)
+        const bateTipo = (filtroTipo === "todos" || tipo.includes(filtroTipo));
 
-        // Exibe apenas se bater os dois filtros
-        if (bateHorario && bateNome) {
+        // Lógica Turno (Diurno/Noturno)
+        const bateTurno = (filtroTurno === "todos" || turno.includes(filtroTurno));
+
+        // Aplica o filtro final (E)
+        if (bateNome && bateHorario && bateTipo && bateTurno) {
             linhas[i].style.display = "";
             visiveis++;
         } else {
@@ -167,9 +185,7 @@ function filtrarTudo() {
     document.getElementById('contadorFiltro').innerText = `(${visiveis} encontrados)`;
 }
 
-// Inicializa ao carregar
 document.addEventListener('DOMContentLoaded', filtrarTudo);
 </script>
-
 </body>
 </html>
