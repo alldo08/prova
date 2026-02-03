@@ -15,7 +15,8 @@
         tr:hover { background-color: #f1f1f1; }
 
         .btn { display: inline-block; padding: 10px 20px; border-radius: 5px; text-decoration: none; font-weight: bold; cursor: pointer; border: none; font-size: 14px; }
-        .btn-gerar { background: #3498db; color: white; }
+        .btn-gerar { background: #3498db; color: white; transition: 0.3s; }
+        .btn-gerar:hover { background: #2980b9; }
         .btn-csv { background: #27ae60; color: white; }
         
         .filter-container { margin: 20px 0; display: flex; flex-wrap: wrap; align-items: center; gap: 10px; background: #f9f9f9; padding: 15px; border-radius: 8px; border: 1px solid #eee; }
@@ -30,6 +31,10 @@
 
         .tag-tipo { background: #e1f5fe; color: #0288d1; padding: 2px 6px; border-radius: 4px; font-weight: bold; font-size: 11px; }
         .tag-turno { background: #fff3e0; color: #f57c00; padding: 2px 6px; border-radius: 4px; font-weight: bold; font-size: 11px; }
+        
+        /* Estilo para a lista de códigos */
+        .code-list { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 15px; padding: 10px; background: #fafafa; border-radius: 6px; border: 1px dashed #bbb; }
+        .code-item { background: #fff; padding: 4px 8px; border-radius: 4px; border: 1px solid #ddd; font-family: monospace; font-weight: bold; color: #2c3e50; }
     </style>
 </head>
 <body>
@@ -42,6 +47,15 @@
         <form action="/gerar" method="post">
             <button type="submit" class="btn btn-gerar">Gerar Novo Código de Prova</button>
         </form>
+
+        <div class="code-list">
+            <strong style="width: 100%; font-size: 12px; color: #777;">Códigos Disponíveis:</strong>
+            {% for c in codigos %}
+                <span class="code-item">{{ c.codigo }}</span>
+            {% else %}
+                <i style="color: #999; font-size: 12px;">Nenhum código disponível no momento.</i>
+            {% endfor %}
+        </div>
     </section>
 
     <br><hr><br>
@@ -131,8 +145,8 @@
                         </a>
                     </td>
                     <td><strong>{{ cand.horarios }}</strong></td>
-                    <td><span class="tag-tipo">{{ cand.tipo_plantao }}</span></td>
-                    <td><span class="tag-turno">{{ cand.turno }}</span></td>
+                    <td><span class="tag-tipo">{{ cand.tipo_plantao or '' }}</span></td>
+                    <td><span class="tag-turno">{{ cand.turno or '' }}</span></td>
                     <td>{{ cand.ja_presta_servico }}</td>
                     <td style="font-size: 11px; color: #888;">{{ cand.data_cadastro }}</td>
                 </tr>
@@ -153,28 +167,22 @@ function filtrarTudo() {
     let visiveis = 0;
 
     for (let i = 0; i < linhas.length; i++) {
-        const nome = linhas[i].getAttribute('data-nome');
-        const horarios = linhas[i].getAttribute('data-horarios');
-        const tipo = linhas[i].getAttribute('data-tipo');
-        const turno = linhas[i].getAttribute('data-turno');
+        const nome = linhas[i].getAttribute('data-nome') || "";
+        const horarios = linhas[i].getAttribute('data-horarios') || "";
+        const tipo = linhas[i].getAttribute('data-tipo') || "";
+        const turno = linhas[i].getAttribute('data-turno') || "";
 
-        // Lógica Nome
         const bateNome = nome.includes(buscaN);
-
-        // Lógica Horário
+        
         let bateHorario = (filtroH === "todos");
         if (!bateHorario) {
             const regex = new RegExp(filtroH + "(h|hrs| horas)", "i");
             if (regex.test(horarios)) bateHorario = true;
         }
 
-        // Lógica Tipo (Fixo/Coringa)
         const bateTipo = (filtroTipo === "todos" || tipo.includes(filtroTipo));
-
-        // Lógica Turno (Diurno/Noturno)
         const bateTurno = (filtroTurno === "todos" || turno.includes(filtroTurno));
 
-        // Aplica o filtro final (E)
         if (bateNome && bateHorario && bateTipo && bateTurno) {
             linhas[i].style.display = "";
             visiveis++;
