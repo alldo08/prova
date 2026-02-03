@@ -278,12 +278,19 @@ async def admin_panel(request: Request):
 @app.post("/gerar")
 async def gerar_codigo():
     codigo = secrets.token_hex(3).upper()
+
     conn = get_db_connection()
     cur = conn.cursor()
-    cur.execute("INSERT INTO codigos_validos (codigo, usado) VALUES (%s, FALSE)", (codigo,))
+
+    cur.execute(
+        "INSERT INTO codigos_validos (codigo, usado) VALUES (%s, FALSE)",
+        (codigo,)
+    )
+
     conn.commit()
     cur.close()
     conn.close()
+
     return RedirectResponse(url="/admin", status_code=303)
 
 @app.get("/resultados", response_class=HTMLResponse)
@@ -450,6 +457,7 @@ def exportar_csv():
     for d in dados: writer.writerow(d)
     output.seek(0)
     return StreamingResponse(output, media_type="text/csv", headers={"Content-Disposition": "attachment; filename=resultados.csv"})
+
 
 
 
