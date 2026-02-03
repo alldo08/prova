@@ -316,9 +316,8 @@ async def gerar_codigo():
 
 @app.get("/resultados", response_class=HTMLResponse)
 async def resultados_publicos(request: Request):
-    if request.cookies.get("admin") != "logado":
-        return RedirectResponse("/login")
-
+    # A trava de cookies foi removida. Acesso agora é livre.
+    
     conn = get_db_connection()
     cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
 
@@ -330,7 +329,7 @@ async def resultados_publicos(request: Request):
     """)
     dados_provas = cur.fetchall()
 
-    # 2. Busca Candidatos (Adicionado tipo_plantao e turno)
+    # 2. Busca Candidatos
     cur.execute("""
         SELECT nome, telefone, horarios, ja_presta_servico, data_cadastro, tipo_plantao, turno 
         FROM candidatos 
@@ -354,11 +353,10 @@ async def resultados_publicos(request: Request):
         </tr>
         """
 
-    # Gerar linhas da tabela de CANDIDATOS (Adicionado atributos de data para o filtro)
+    # Gerar linhas da tabela de CANDIDATOS
     linhas_candidatos = ""
     for c in dados_candidatos:
         tel_limpo = c['telefone'].replace('(','').replace(')','').replace('-','').replace(' ','')
-        # Garantindo que valores nulos não quebrem o .lower()
         tipo = (c['tipo_plantao'] or "").lower()
         turno = (c['turno'] or "").lower()
         
@@ -388,6 +386,7 @@ async def resultados_publicos(request: Request):
         <meta charset="utf-8">
         <title>Painel de Resultados - Santer Saúde</title>
         <style>
+            /* Chaves duplicadas {{}} para o Python não interpretar como variável */
             .filter-box {{ background:white; padding:15px; margin-bottom:15px; border-radius:8px; box-shadow:0 2px 10px rgba(0,0,0,0.05); display:flex; gap:10px; align-items:center; flex-wrap:wrap; }}
             input, select {{ padding:8px; border-radius:5px; border:1px solid #ccc; }}
             th {{ text-align:left; padding:12px; }}
@@ -494,6 +493,7 @@ def exportar_csv():
     for d in dados: writer.writerow(d)
     output.seek(0)
     return StreamingResponse(output, media_type="text/csv", headers={"Content-Disposition": "attachment; filename=resultados.csv"})
+
 
 
 
