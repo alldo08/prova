@@ -261,19 +261,32 @@ async def admin_login(user: str = Form(...), password: str = Form(...)):
     return RedirectResponse("/login")
 
 @app.get("/admin", response_class=HTMLResponse)
-async def admin_panel(request: Request):
-    if request.cookies.get("admin") != "logado": return RedirectResponse("/login")
+async def painel_admin(request: Request):
+    # 1. Conecta ao banco
     conn = get_db_connection()
     cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
-    cur.execute("SELECT * FROM resultados ORDER BY id DESC")
-    resultados = cur.fetchall()
+
+    # 2. BUSCA OS CÓDIGOS (Isso é o que estava faltando!)
+    cur.execute("SELECT codigo FROM codigos_validos WHERE usado = FALSE ORDER BY codigo DESC")
+    codigos_db = cur.fetchall()
+
+    # 3. Busca Resultados e Candidatos (como você já fazia)
+    cur.execute("SELECT * FROM resultados ORDER BY nota DESC")
+    resultados_db = cur.fetchall()
+    
     cur.execute("SELECT * FROM candidatos ORDER BY id DESC")
-    candidatos = cur.fetchall()
-    cur.execute("SELECT codigo FROM codigos_validos WHERE usado = false")
-    codigos = cur.fetchall()
+    candidatos_db = cur.fetchall()
+
     cur.close()
     conn.close()
-    return templates.TemplateResponse("admin.html", {"request": request, "resultados": resultados, "candidatos": candidatos, "codigos": codigos})
+
+    # 4. Renderiza a página passando as TRÊS listas
+    return templates.TemplateResponse("admin.html", {
+        "request": request,
+        "codigos": codigos_db,      # <--- Importante!
+        "resultados": resultados_db,
+        "candidatos": candidatos_db
+    })
 
 @app.post("/gerar")
 async def gerar_codigo():
@@ -457,6 +470,7 @@ def exportar_csv():
     for d in dados: writer.writerow(d)
     output.seek(0)
     return StreamingResponse(output, media_type="text/csv", headers={"Content-Disposition": "attachment; filename=resultados.csv"})
+
 
 
 
