@@ -223,6 +223,14 @@ async def submit(request: Request, nome: str = Form(...), codigo: str = Form(...
     cur.close()
     conn.close()
 
+    # Renderiza a página de resultado
+    return templates.TemplateResponse("resultado.html", {
+        "request": request, 
+        "nome": nome_final, 
+        "acertos": acertos, 
+        "total": len(PERGUNTAS), 
+        "fraude": foi_fraude
+    })
     return templates.TemplateResponse("resultado.html", {"request": request, "nome": nome_final, "acertos": acertos, "total": len(PERGUNTAS), "fraude": foi_fraude})
 
 @app.get("/health-check")
@@ -486,6 +494,7 @@ def exportar_csv():
     for d in dados: writer.writerow(d)
     output.seek(0)
     return StreamingResponse(output, media_type="text/csv", headers={"Content-Disposition": "attachment; filename=resultados.csv"})
+
 
 
 
