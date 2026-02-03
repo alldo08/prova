@@ -69,7 +69,7 @@ def init_db():
             usado BOOLEAN DEFAULT FALSE
         )
     """)
-    # Tabela de Candidatos (Nova)
+   # Tabela de Candidatos
     cur.execute("""
         CREATE TABLE IF NOT EXISTS candidatos (
             id SERIAL PRIMARY KEY,
@@ -80,6 +80,12 @@ def init_db():
             data_cadastro TEXT NOT NULL
         )
     """)
+
+    # --- AGORA A PARTE IMPORTANTE: ADICIONAR AS NOVAS COLUNAS ---
+    # O comando abaixo adiciona a coluna se ela ainda não existir
+    cur.execute("ALTER TABLE candidatos ADD COLUMN IF NOT EXISTS tipo_plantao TEXT")
+    cur.execute("ALTER TABLE candidatos ADD COLUMN IF NOT EXISTS turno TEXT")
+
     conn.commit()
     cur.close()
     conn.close()
@@ -154,17 +160,28 @@ async def cadastrar_candidato(
     nome: str = Form(...),
     telefone: str = Form(...),
     horarios: list = Form(...), 
-    servico: str = Form(...)
+    servico: str = Form(...),
+    tipo_plantao: list = Form(...), # Novo: Recebe a lista de Fixo/Coringa
+    turno: list = Form(...)         # Novo: Recebe a lista de Diurno/Noturno
 ):
+    # Transformamos as listas em texto separado por vírgula para salvar no banco
     horarios_str = ", ".join(horarios)
+    tipo_str = ", ".join(tipo_plantao)
+    turno_str = ", ".join(turno)
+    
     data_atual = datetime.now(timezone_br).strftime("%d/%m/%Y %H:%M")
     
     conn = get_db_connection()
     cur = conn.cursor()
+    
+    # Atualizamos o INSERT para incluir as duas novas colunas
     cur.execute(
-        "INSERT INTO candidatos (nome, telefone, horarios, ja_presta_servico, data_cadastro) VALUES (%s, %s, %s, %s, %s)",
-        (nome, telefone, horarios_str, servico, data_atual)
+        """INSERT INTO candidatos 
+           (nome, telefone, horarios, ja_presta_servico, data_cadastro, tipo_plantao, turno) 
+           VALUES (%s, %s, %s, %s, %s, %s, %s)""",
+        (nome, telefone, horarios_str, servico, data_atual, tipo_str, turno_str)
     )
+    
     conn.commit()
     cur.close()
     conn.close()
@@ -433,5 +450,6 @@ def exportar_csv():
     for d in dados: writer.writerow(d)
     output.seek(0)
     return StreamingResponse(output, media_type="text/csv", headers={"Content-Disposition": "attachment; filename=resultados.csv"})
+
 
 
