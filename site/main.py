@@ -203,7 +203,20 @@ async def verificar_codigo(codigo: str):
     if result[0]: return {"status": "erro", "mensagem": "Usado"}
     return {"status": "sucesso"}
 
-@app.post("/submit")
+@app.get("/api/bairros")
+async def listar_bairros():
+    conn = get_db_connection()
+    cur = conn.cursor()
+    # Pega nomes de bairros únicos, ignorando vazios e ordenando
+    cur.execute("SELECT DISTINCT bairro FROM candidatos WHERE bairro IS NOT NULL AND bairro != '' ORDER BY bairro ASC")
+    bairros = [linha[0] for linha in cur.fetchall()]
+    cur.close()
+    conn.close()
+    return bairros
+
+    
+    
+    @app.post("/submit")
 async def submit(request: Request, nome: str = Form(...), codigo: str = Form(...), fraude: str = Form(None)):
     codigo = codigo.strip().upper()
     form_data = await request.form()
@@ -496,6 +509,7 @@ def exportar_csv():
     for d in dados: writer.writerow(d)
     output.seek(0)
     return StreamingResponse(output, media_type="text/csv", headers={"Content-Disposition": "attachment; filename=resultados.csv"})
+
 
 
 
