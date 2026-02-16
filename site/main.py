@@ -161,12 +161,13 @@ async def pagina_cadastro(request: Request):
 async def cadastrar_candidato(
     nome: str = Form(...),
     telefone: str = Form(...),
-    horarios: list = Form(...), 
+    bairro: str = Form(...),         # Adicionado: Recebe o bairro do formulário
+    horarios: list = Form([]),       # Mudado para [] para não dar erro se nada for marcado
     servico: str = Form(...),
-    tipo_plantao: list = Form(...), # Novo: Recebe a lista de Fixo/Coringa
-    turno: list = Form(...)         # Novo: Recebe a lista de Diurno/Noturno
+    tipo_plantao: list = Form([]),   # Mudado para [] para segurança
+    turno: list = Form([])           # Mudado para [] para segurança
 ):
-    # Transformamos as listas em texto separado por vírgula para salvar no banco
+    # Transformamos as listas em texto separado por vírgula
     horarios_str = ", ".join(horarios)
     tipo_str = ", ".join(tipo_plantao)
     turno_str = ", ".join(turno)
@@ -176,12 +177,12 @@ async def cadastrar_candidato(
     conn = get_db_connection()
     cur = conn.cursor()
     
-    # Atualizamos o INSERT para incluir as duas novas colunas
+    # Atualizamos o INSERT para incluir a coluna 'bairro'
     cur.execute(
         """INSERT INTO candidatos 
-           (nome, telefone, horarios, ja_presta_servico, data_cadastro, tipo_plantao, turno) 
-           VALUES (%s, %s, %s, %s, %s, %s, %s)""",
-        (nome, telefone, horarios_str, servico, data_atual, tipo_str, turno_str)
+           (nome, telefone, bairro, horarios, ja_presta_servico, data_cadastro, tipo_plantao, turno) 
+           VALUES (%s, %s, %s, %s, %s, %s, %s, %s)""",
+        (nome, telefone, bairro, horarios_str, servico, data_atual, tipo_str, turno_str)
     )
     
     conn.commit()
@@ -495,6 +496,7 @@ def exportar_csv():
     for d in dados: writer.writerow(d)
     output.seek(0)
     return StreamingResponse(output, media_type="text/csv", headers={"Content-Disposition": "attachment; filename=resultados.csv"})
+
 
 
 
