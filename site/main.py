@@ -290,28 +290,32 @@ async def painel_admin(request: Request):
     conn = get_db_connection()
     cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
 
-    # 2. BUSCA OS CÓDIGOS (Isso é o que estava faltando!)
+    # 2. BUSCA OS CÓDIGOS
     cur.execute("SELECT codigo FROM codigos_validos WHERE usado = FALSE ORDER BY codigo DESC")
     codigos_db = cur.fetchall()
 
-    # 3. Busca Resultados e Candidatos (como você já fazia)
+    # 3. Busca Resultados e Candidatos
     cur.execute("SELECT * FROM resultados ORDER BY nota DESC")
     resultados_db = cur.fetchall()
     
     cur.execute("SELECT * FROM candidatos ORDER BY id DESC")
     candidatos_db = cur.fetchall()
 
+    # --- NOVO: BUSCA BAIRROS ÚNICOS PARA O FILTRO ---
+    cur.execute("SELECT DISTINCT bairro FROM candidatos WHERE bairro IS NOT NULL AND bairro != '' ORDER BY bairro ASC")
+    bairros_db = [linha['bairro'] for linha in cur.fetchall()]
+
     cur.close()
     conn.close()
 
-    # 4. Renderiza a página passando as TRÊS listas
+    # 4. Renderiza a página passando as QUATRO listas
     return templates.TemplateResponse("admin.html", {
         "request": request,
-        "codigos": codigos_db,      # <--- Importante!
+        "codigos": codigos_db,
         "resultados": resultados_db,
-        "candidatos": candidatos_db
+        "candidatos": candidatos_db,
+        "bairros_unicos": bairros_db  # <--- Enviando a lista de bairros para o HTML
     })
-
 @app.post("/gerar")
 async def gerar_codigo():
     codigo = secrets.token_hex(3).upper()
@@ -511,6 +515,7 @@ async def resultados_publicos(request: Request):
     </body>
     </html>
     """
+
 
 
 
