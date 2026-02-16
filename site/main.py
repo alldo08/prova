@@ -343,7 +343,7 @@ async def resultados_publicos(request: Request):
     """)
     dados_provas = cur.fetchall()
 
-    # 2. Busca Candidatos (Incluindo a coluna bairro)
+    # 2. Busca Candidatos
     cur.execute("""
         SELECT nome, telefone, bairro, horarios, ja_presta_servico, data_cadastro, tipo_plantao, turno 
         FROM candidatos 
@@ -351,8 +351,17 @@ async def resultados_publicos(request: Request):
     """)
     dados_candidatos = cur.fetchall()
 
+    # 3. NOVO: Busca apenas os bairros únicos que já estão cadastrados para o Filtro
+    cur.execute("SELECT DISTINCT bairro FROM candidatos WHERE bairro IS NOT NULL AND bairro != '' ORDER BY bairro ASC")
+    bairros_unicos = [linha['bairro'] for linha in cur.fetchall()]
+
     cur.close()
     conn.close()
+
+    # Gerar opções para o SELECT de bairros
+    opcoes_bairros = '<option value="todos">Bairro: Todos</option>'
+    for b in bairros_unicos:
+        opcoes_bairros += f'<option value="{b.lower()}">{b}</option>'
 
     # Gerar linhas da tabela de PROVAS
     linhas_provas = ""
@@ -426,7 +435,9 @@ async def resultados_publicos(request: Request):
                 <strong>🔍 Filtros:</strong>
                 <input type="text" id="buscaNome" placeholder="Nome..." onkeyup="filtrarTudo()" style="width:180px">
                 
-                <input type="text" id="buscaBairro" placeholder="Bairro..." onkeyup="filtrarTudo()" style="width:150px">
+                <select id="filtroBairro" onchange="filtrarTudo()">
+                    {opcoes_bairros}
+                </select>
                 
                 <select id="filtroHorario" onchange="filtrarTudo()">
                     <option value="todos">Carga: Todas</option>
@@ -465,7 +476,7 @@ async def resultados_publicos(request: Request):
         <script>
         function filtrarTudo() {{
             const buscaN = document.getElementById('buscaNome').value.toLowerCase();
-            const buscaB = document.getElementById('buscaBairro').value.toLowerCase();
+            const filtroB = document.getElementById('filtroBairro').value.toLowerCase();
             const filtroH = document.getElementById('filtroHorario').value;
             const filtroT = document.getElementById('filtroTipo').value;
             const filtroTur = document.getElementById('filtroTurno').value;
@@ -481,7 +492,7 @@ async def resultados_publicos(request: Request):
                 const turno = linhas[i].getAttribute('data-turno');
 
                 const bateNome = nome.includes(buscaN);
-                const bateBairro = bairro.includes(buscaB);
+                const bateBairro = (filtroB === "todos") || (bairro === filtroB);
                 const bateHorario = (filtroH === "todos") || (horarios.includes(filtroH));
                 const bateTipo = (filtroT === "todos") || (tipo.includes(filtroT));
                 const bateTurno = (filtroTur === "todos") || (turno.includes(filtroTur));
@@ -500,7 +511,6 @@ async def resultados_publicos(request: Request):
     </body>
     </html>
     """
-
 
 
 
