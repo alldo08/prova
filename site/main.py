@@ -77,7 +77,8 @@ def init_db():
             telefone TEXT NOT NULL,
             horarios TEXT NOT NULL,
             ja_presta_servico TEXT NOT NULL,
-            data_cadastro TEXT NOT NULL
+            data_cadastro TEXT NOT NULL,
+            bairro TEXT
         )
     """)
 
@@ -85,6 +86,7 @@ def init_db():
     # O comando abaixo adiciona a coluna se ela ainda não existir
     cur.execute("ALTER TABLE candidatos ADD COLUMN IF NOT EXISTS tipo_plantao TEXT")
     cur.execute("ALTER TABLE candidatos ADD COLUMN IF NOT EXISTS turno TEXT")
+    cur.execute("ALTER TABLE candidatos ADD COLUMN IF NOT EXISTS bairro TEXT")
 
     conn.commit()
     cur.close()
@@ -493,6 +495,7 @@ def exportar_csv():
     for d in dados: writer.writerow(d)
     output.seek(0)
     return StreamingResponse(output, media_type="text/csv", headers={"Content-Disposition": "attachment; filename=resultados.csv"})
+
 
 
 
