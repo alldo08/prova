@@ -332,8 +332,6 @@ async def gerar_codigo():
 
 @app.get("/resultados", response_class=HTMLResponse)
 async def resultados_publicos(request: Request):
-    # A trava de cookies foi removida. Acesso agora é livre.
-    
     conn = get_db_connection()
     cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
 
@@ -345,9 +343,9 @@ async def resultados_publicos(request: Request):
     """)
     dados_provas = cur.fetchall()
 
-    # 2. Busca Candidatos
+    # 2. Busca Candidatos (Incluindo a coluna bairro)
     cur.execute("""
-        SELECT nome, telefone, horarios, ja_presta_servico, data_cadastro, tipo_plantao, turno 
+        SELECT nome, telefone, bairro, horarios, ja_presta_servico, data_cadastro, tipo_plantao, turno 
         FROM candidatos 
         ORDER BY id DESC
     """)
@@ -375,11 +373,13 @@ async def resultados_publicos(request: Request):
         tel_limpo = c['telefone'].replace('(','').replace(')','').replace('-','').replace(' ','')
         tipo = (c['tipo_plantao'] or "").lower()
         turno = (c['turno'] or "").lower()
+        bairro_val = (c['bairro'] or "Não informado")
         
         linhas_candidatos += f"""
         <tr class="linha-candidato" 
             data-horarios="{c['horarios'].lower()}" 
             data-nome="{c['nome'].lower()}"
+            data-bairro="{bairro_val.lower()}"
             data-tipo="{tipo}"
             data-turno="{turno}">
             <td style="padding:12px; border-bottom:1px solid #eee">{c['nome']}</td>
@@ -388,6 +388,7 @@ async def resultados_publicos(request: Request):
                     📱 {c['telefone']}
                 </a>
             </td>
+            <td style="padding:12px; border-bottom:1px solid #eee">{bairro_val}</td>
             <td style="padding:12px; border-bottom:1px solid #eee"><strong>{c['horarios']}</strong></td>
             <td style="padding:12px; border-bottom:1px solid #eee; font-size:12px">{c['tipo_plantao'] or ''} / {c['turno'] or ''}</td>
             <td style="padding:12px; border-bottom:1px solid #eee">{c['ja_presta_servico']}</td>
@@ -402,7 +403,6 @@ async def resultados_publicos(request: Request):
         <meta charset="utf-8">
         <title>Painel de Resultados - Santer Saúde</title>
         <style>
-            /* Chaves duplicadas {{}} para o Python não interpretar como variável */
             .filter-box {{ background:white; padding:15px; margin-bottom:15px; border-radius:8px; box-shadow:0 2px 10px rgba(0,0,0,0.05); display:flex; gap:10px; align-items:center; flex-wrap:wrap; }}
             input, select {{ padding:8px; border-radius:5px; border:1px solid #ccc; }}
             th {{ text-align:left; padding:12px; }}
@@ -411,7 +411,7 @@ async def resultados_publicos(request: Request):
     </head>
     <body style="font-family:Arial, sans-serif; background:#f4f6f8; padding:30px">
 
-        <div style="max-width:1100px; margin:auto">
+        <div style="max-width:1200px; margin:auto">
             <h2 style="color:#2a5298">📝 Resultados das Provas</h2>
             <table style="width:100%; border-collapse:collapse; background:white; box-shadow:0 10px 30px rgba(0,0,0,.1); margin-bottom:50px">
                 <tr style="background:#2a5298; color:white">
@@ -424,7 +424,9 @@ async def resultados_publicos(request: Request):
 
             <div class="filter-box">
                 <strong>🔍 Filtros:</strong>
-                <input type="text" id="buscaNome" placeholder="Nome..." onkeyup="filtrarTudo()" style="width:200px">
+                <input type="text" id="buscaNome" placeholder="Nome..." onkeyup="filtrarTudo()" style="width:180px">
+                
+                <input type="text" id="buscaBairro" placeholder="Bairro..." onkeyup="filtrarTudo()" style="width:150px">
                 
                 <select id="filtroHorario" onchange="filtrarTudo()">
                     <option value="todos">Carga: Todas</option>
@@ -450,6 +452,7 @@ async def resultados_publicos(request: Request):
                 <tr style="background:#1abc9c; color:white">
                     <th style="padding:12px">Nome</th>
                     <th>WhatsApp</th>
+                    <th>Bairro</th>
                     <th>Disponibilidade</th>
                     <th>Tipo/Turno</th>
                     <th>É Santer?</th>
@@ -462,6 +465,7 @@ async def resultados_publicos(request: Request):
         <script>
         function filtrarTudo() {{
             const buscaN = document.getElementById('buscaNome').value.toLowerCase();
+            const buscaB = document.getElementById('buscaBairro').value.toLowerCase();
             const filtroH = document.getElementById('filtroHorario').value;
             const filtroT = document.getElementById('filtroTipo').value;
             const filtroTur = document.getElementById('filtroTurno').value;
@@ -471,16 +475,18 @@ async def resultados_publicos(request: Request):
 
             for (let i = 0; i < linhas.length; i++) {{
                 const nome = linhas[i].getAttribute('data-nome');
+                const bairro = linhas[i].getAttribute('data-bairro');
                 const horarios = linhas[i].getAttribute('data-horarios');
                 const tipo = linhas[i].getAttribute('data-tipo');
                 const turno = linhas[i].getAttribute('data-turno');
 
                 const bateNome = nome.includes(buscaN);
+                const bateBairro = bairro.includes(buscaB);
                 const bateHorario = (filtroH === "todos") || (horarios.includes(filtroH));
                 const bateTipo = (filtroT === "todos") || (tipo.includes(filtroT));
                 const bateTurno = (filtroTur === "todos") || (turno.includes(filtroTur));
 
-                if (bateNome && bateHorario && bateTipo && bateTurno) {{
+                if (bateNome && bateBairro && bateHorario && bateTipo && bateTurno) {{
                     linhas[i].style.display = "";
                     visiveis++;
                 }} else {{
@@ -494,21 +500,6 @@ async def resultados_publicos(request: Request):
     </body>
     </html>
     """
-
-@app.get("/resultados/csv")
-def exportar_csv():
-    conn = get_db_connection()
-    cur = conn.cursor()
-    cur.execute("SELECT nome, codigo, nota, data FROM resultados ORDER BY id DESC")
-    dados = cur.fetchall()
-    cur.close()
-    conn.close()
-    output = io.StringIO()
-    writer = csv.writer(output, delimiter=';')
-    writer.writerow(["Nome", "Código", "Nota", "Data"])
-    for d in dados: writer.writerow(d)
-    output.seek(0)
-    return StreamingResponse(output, media_type="text/csv", headers={"Content-Disposition": "attachment; filename=resultados.csv"})
 
 
 
