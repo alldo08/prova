@@ -216,7 +216,7 @@ async def listar_bairros():
 
     
     
-    @app.post("/submit")
+@app.post("/submit")
 async def submit(request: Request, nome: str = Form(...), codigo: str = Form(...), fraude: str = Form(None)):
     codigo = codigo.strip().upper()
     form_data = await request.form()
@@ -509,6 +509,7 @@ def exportar_csv():
     for d in dados: writer.writerow(d)
     output.seek(0)
     return StreamingResponse(output, media_type="text/csv", headers={"Content-Disposition": "attachment; filename=resultados.csv"})
+
 
 
 
