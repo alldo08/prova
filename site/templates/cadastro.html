@@ -33,7 +33,8 @@
             <input type="tel" name="telefone" required placeholder="(00) 00000-0000">
 
             <label>Bairro onde mora:</label>
-            <input type="text" name="bairro" required placeholder="Ex: Centro, Copacabana...">
+            <input type="text" name="bairro" id="campoBairro" required placeholder="Comece a digitar o bairro..." list="listaBairros" autocomplete="off">
+            <datalist id="listaBairros"></datalist>
 
             <span class="section-title">Disponibilidade</span>
             
@@ -66,5 +67,30 @@
             <button type="submit">Salvar Cadastro</button>
         </form>
     </div>
+
+    <script>
+        async function carregarSugestoesBairros() {
+            try {
+                // Busca a lista de bairros da sua nova rota no Python
+                const resposta = await fetch('/api/bairros');
+                if (resposta.ok) {
+                    const bairros = await resposta.json();
+                    const datalist = document.getElementById('listaBairros');
+                    
+                    datalist.innerHTML = ""; // Limpa a lista antes de preencher
+                    bairros.forEach(bairro => {
+                        const opcao = document.createElement('option');
+                        opcao.value = bairro;
+                        datalist.appendChild(opcao);
+                    });
+                }
+            } catch (erro) {
+                console.error("Erro ao carregar lista de bairros:", erro);
+            }
+        }
+
+        // Executa a função assim que a página termina de carregar
+        window.onload = carregarSugestoesBairros;
+    </script>
 </body>
 </html>
