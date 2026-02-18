@@ -31,8 +31,8 @@ if os.path.exists(cred_path):
             print("✅ Firebase inicializado com sucesso usando Secret File!")
     except Exception as e:
         print(f"❌ Erro ao ler o Secret File: {e}")
-else:
-    print("❌ Arquivo firebase-adminsdk.json não encontrado no servidor!")
+    else:
+        print("❌ Arquivo firebase-adminsdk.json não encontrado no servidor!")
 else:
     # Caso você queira testar localmente com o arquivo, ele tenta o arquivo se a variável não existir
     if os.path.exists("firebase-adminsdk.json"):
@@ -643,6 +643,7 @@ async def resultados_publicos(request: Request):
     </body>
     </html>
     """
+
 
 
 
