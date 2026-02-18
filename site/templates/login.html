@@ -1,0 +1,38 @@
+!DOCTYPE html>
+<html>
+<head>
+    <link rel="manifest" href="/static/manifest.json">
+    <title>Login Santer</title>
+</head>
+<body>
+    <h1>Entrar no App Santer</h1>
+    <button id="btn-google">Entrar com Google</button>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-app.js";
+        import { getAuth, signInWithPopup, GoogleAuthProvider } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-auth.js";
+
+        const firebaseConfig = { /* SEUS DADOS AQUI */ };
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const provider = new GoogleAuthProvider();
+
+        document.getElementById('btn-google').onclick = async () => {
+            const result = await signInWithPopup(auth, provider);
+            const user = result.user;
+
+            // Envia os dados para o seu Python salvar no Supabase
+            await fetch('/api/salvar-usuario', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    nome: user.displayName,
+                    email: user.email,
+                    foto: user.photoURL
+                })
+            });
+            window.location.href = "/perfil";
+        };
+    </script>
+</body>
+</html>
