@@ -82,23 +82,59 @@ else:
 
 class TokenBody(BaseModel):
     token: str
+#Verificação de login####
+def usuario_logado(request: Request):
+    user = request.cookies.get("session_user")
+    if not user:
+        return None
+    return user
 
+@app.get("/perfil")
+async def pagina_perfil(request: Request):
+    user = usuario_logado(request)
+    if not user:
+        return RedirectResponse(url="/entrar?erro=faca_login")
+    
+    return templates.TemplateResponse("perfil.html", {"request": request, "email": user})
+
+#Auth#
 @app.post("/auth/callback")
-async def auth_callback(body: TokenBody):
+async def auth_callback(body: TokenBody, response: Response):
     try:
-        # 1. Verifica se o token enviado pelo Google é válido
+        # 1. Decodifica o token enviado pelo frontend
         decoded_token = auth.verify_id_token(body.token)
-        uid = decoded_token['uid']
         email = decoded_token.get('email')
         
-        print(f"✅ Usuário autenticado: {email} (UID: {uid})")
+        # 2. Conecta ao Firestore para verificar o e-mail
+        db = firestore.client()
+        doc_ref = db.collection("permissoes").document(email).get()
         
-        # Aqui você poderia criar uma sessão ou apenas retornar sucesso
-        return {"status": "success", "uid": uid, "email": email}
+        # 3. Verifica se o e-mail existe na coleção "permissoes"
+        if not doc_ref.exists:
+            print(f"🚫 Tentativa de acesso negada: {email}")
+            raise HTTPException(status_code=403, detail="E-mail não autorizado no banco de dados.")
+
+        # Opcional: Verificar se o usuário está 'ativo' dentro do documento
+        # dados = doc_ref.to_dict()
+        # if not dados.get("ativo"): raise ...
+
+        print(f"✅ Acesso liberado via DB: {email}")
+        
+        # Cria o cookie de sessão para as próximas páginas
+        response.set_cookie(
+            key="session_user", 
+            value=email, 
+            httponly=True, 
+            max_age=3600 * 24 # 24 horas de duração
+        )
+        
+        return {"status": "success"}
         
     except Exception as e:
-        print(f"❌ Erro ao verificar token: {e}")
-        raise HTTPException(status_code=401, detail="Token inválido")
+        print(f"❌ Erro na autenticação: {e}")
+        if "403" in str(e):
+            raise HTTPException(status_code=403, detail="E-mail não autorizado.")
+        raise HTTPException(status_code=401, detail="Token inválido.")
 # =============================
 # CONFIGURAÇÃO
 # =============================
@@ -467,6 +503,37 @@ async def painel_admin(request: Request):
         "candidatos": candidatos_db,
         "bairros_unicos": bairros_db  # <--- Enviando a lista de bairros para o HTML
     })
+
+@app.post("/admin/autorizar")
+async def autorizar_email(email_novo: str, request: Request):
+    # Verifique primeiro se QUEM está tentando autorizar é você (o admin master)
+    user_admin = request.cookies.get("session_user")
+    if user_admin != "chasealdorobert@gmail.com":
+        raise HTTPException(status_code=401)
+
+    db = firestore.client()
+    db.collection("permissoes").document(email_novo).set({
+        "ativo": True,
+        "data_autorizacao": firestore.SERVER_TIMESTAMP,
+        "autorizado_por": user_admin
+    })
+    return {"message": f"E-mail {email_novo} autorizado com sucesso!"}
+
+@app.get("/admin/acessos")
+async def pagina_gestao_acessos(request: Request):
+    user_admin = request.cookies.get("session_user")
+    # Coloque seu e-mail aqui
+    if user_admin != "seu-email-admin@gmail.com":
+        return RedirectResponse(url="/entrar?erro=privilegio_insuficiente")
+
+    db = firestore.client()
+    docs = db.collection("permissoes").stream()
+    
+    usuarios = [{"email": doc.id} for doc in docs]
+
+    # Aqui você usa o nome que quiser para o arquivo HTML
+    return templates.TemplateResponse("gestao_acessos.html", {"request": request, "usuarios": usuarios})
+
 @app.post("/gerar")
 async def gerar_codigo():
     codigo = secrets.token_hex(3).upper()
@@ -666,6 +733,7 @@ async def resultados_publicos(request: Request):
     </body>
     </html>
     """
+
 
 
 
