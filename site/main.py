@@ -15,6 +15,12 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.responses import StreamingResponse
 from fastapi import Form
+from fastapi.staticfiles import StaticFiles
+
+# Isso diz: "Tudo que começar com /static, procure na pasta física chamada static"
+app.mount("/static", StaticFiles(directory="static"), name="static")
+
+
 # =============================
 # CONFIGURAÇÃO
 # =============================
@@ -559,6 +565,7 @@ async def resultados_publicos(request: Request):
     </body>
     </html>
     """
+
 
 
 
