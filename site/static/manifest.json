@@ -3,6 +3,8 @@
   "short_name": "Santer",
   "start_url": "/entrar",
   "display": "standalone",
+  "orientation": "portrait",
+  "scope": "/",
   "background_color": "#ffffff",
   "theme_color": "#1abc9c",
   "icons": [
