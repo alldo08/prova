@@ -25,29 +25,29 @@ firebase_config_env = os.getenv("FIREBASE_JSON")
 
 if firebase_config_env:
     try:
-        cred_dict = json.loads(firebase_config_env.strip())
+        # Tenta decodificar de Base64 (mais seguro para transporte de chaves)
+        try:
+            decoded_bytes = base64.b64decode(firebase_config_env)
+            decoded_str = decoded_bytes.decode('utf-8')
+            cred_dict = json.loads(decoded_str)
+        except Exception:
+            # Se falhar, tenta ler como JSON direto (caso você não use Base64)
+            cred_dict = json.loads(firebase_config_env.strip())
         
+        # Garante o formato da chave privada
         if "private_key" in cred_dict:
-            pk = cred_dict["private_key"]
-            # Remove TUDO que não for a parte da chave em si
-            pk = pk.replace("-----BEGIN PRIVATE KEY-----", "")
-            pk = pk.replace("-----END PRIVATE KEY-----", "")
-            pk = pk.replace("\\n", "").replace("\n", "").replace(" ", "")
-            
-            # Reconstrói do zero no formato que o Google exige (linhas de 64 caracteres)
-            formatted_pk = "-----BEGIN PRIVATE KEY-----\n"
-            for i in range(0, len(pk), 64):
-                formatted_pk += pk[i:i+64] + "\n"
-            formatted_pk += "-----END PRIVATE KEY-----\n"
-            
-            cred_dict["private_key"] = formatted_pk
-    
+            pk = cred_dict["private_key"].replace("\\n", "\n")
+            if "-----BEGIN PRIVATE KEY-----" not in pk:
+                pk = f"-----BEGIN PRIVATE KEY-----\n{pk}\n-----END PRIVATE KEY-----\n"
+            cred_dict["private_key"] = pk
+
         if not firebase_admin._apps:
             cred = credentials.Certificate(cred_dict)
             firebase_admin.initialize_app(cred)
             print("✅ Firebase inicializado com sucesso!")
+            
     except Exception as e:
-        print(f"❌ Erro final: {e}")
+        print(f"❌ Erro Crítico Firebase: {e}")
 else:
     # Caso você queira testar localmente com o arquivo, ele tenta o arquivo se a variável não existir
     if os.path.exists("firebase-adminsdk.json"):
@@ -658,6 +658,7 @@ async def resultados_publicos(request: Request):
     </body>
     </html>
     """
+
 
 
 
