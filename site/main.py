@@ -13,27 +13,26 @@ import psycopg2.extras
 from fastapi import FastAPI, Request, Form, HTTPException
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
-from fastapi.responses import StreamingResponse
+from fastapi.responses import StreamingResponse, FileResponse
 from fastapi import Form
 from fastapi.staticfiles import StaticFiles
 
 # Isso diz: "Tudo que começar com /static, procure na pasta física chamada static"
 app = FastAPI()
 
-# Pega o caminho de onde o main.py está rodando no Render
+# 1. Tenta o caminho relativo ao arquivo main.py
 base_dir = os.path.dirname(os.path.abspath(__file__))
 static_path = os.path.join(base_dir, "static")
 
-# DEBUG: Isso vai nos confirmar no log se o caminho montado bate com o real
-print(f"Tentando montar a pasta em: {static_path}")
+# 2. Se não encontrar, força o caminho que apareceu no seu log do Render
+if not os.path.exists(static_path):
+    static_path = "/opt/render/project/src/site/static"
 
 if os.path.exists(static_path):
+    print(f"✅ MONTANDO STATIC EM: {static_path}")
     app.mount("/static", StaticFiles(directory=static_path), name="static")
 else:
-    # Caso o Render mude a estrutura, essa linha tenta o caminho que deu certo no seu log
-    fallback_path = "/opt/render/project/src/site/static"
-    if os.path.exists(fallback_path):
-        app.mount("/static", StaticFiles(directory=fallback_path), name="static")
+    print("❌ ERRO: Pasta static não encontrada em lugar nenhum!")
 
 
 # =============================
@@ -62,6 +61,18 @@ async def self_ping():
             except Exception:
                 pass 
             await asyncio.sleep(40)
+
+
+
+@app.get("/sw.js")
+async def get_sw():
+    return FileResponse(os.path.join(static_path, "sw.js"))
+
+@app.get("/manifest.json")
+async def get_manifest():
+    return FileResponse(os.path.join(static_path, "manifest.json"))
+
+
 
 # =============================
 # BANCO DE DADOS
@@ -580,6 +591,7 @@ async def resultados_publicos(request: Request):
     </body>
     </html>
     """
+
 
 
 
