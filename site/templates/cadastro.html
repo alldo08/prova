@@ -92,6 +92,13 @@
 
         // Executa a função assim que a página termina de carregar
         window.onload = carregarSugestoesBairros;
+    <script>
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/static/sw.js')
+          .then(() => console.log("Service Worker Registrado!"));
+      }
     </script>
+    </script>
+    
 </body>
 </html>
