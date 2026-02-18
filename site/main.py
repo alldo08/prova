@@ -33,7 +33,7 @@ else:
     # Caso o Render mude a estrutura, essa linha tenta o caminho que deu certo no seu log
     fallback_path = "/opt/render/project/src/site/static"
     if os.path.exists(fallback_path):
-        app.mount("/static", StaticFiles(directory=fallback_path), name="static"))
+        app.mount("/static", StaticFiles(directory=fallback_path), name="static")
 
 
 # =============================
@@ -580,6 +580,7 @@ async def resultados_publicos(request: Request):
     </body>
     </html>
     """
+
 
 
 
