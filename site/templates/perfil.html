@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meu Perfil - Santer</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; background-color: #f4f7f6; }
+        .container { max-width: 400px; margin: auto; background: white; padding: 20px; border-radius: 10px; shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        input, textarea { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ddd; border-radius: 5px; box-sizing: border-box; }
+        button { width: 100%; background-color: #1abc9c; color: white; border: none; padding: 15px; border-radius: 5px; cursor: pointer; font-size: 16px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Complete seu Perfil</h2>
+    <p>Olá! Precisamos de mais alguns detalhes para as escalas.</p>
+
+    <form action="/atualizar-perfil" method="POST">
+        
+        <label>Seu Peso (kg):</label>
+        <input type="number" name="peso" step="0.1" placeholder="Ex: 75.5" required>
+
+        <label>Qualidades Profissionais:</label>
+        <textarea name="qualidades" rows="4" placeholder="Ex: Pontualidade, experiência em UTI, etc..." required></textarea>
+
+        <button type="submit">Salvar e Ver Plantões</button>
+    </form>
+</div>
+
+</body>
+</html>
