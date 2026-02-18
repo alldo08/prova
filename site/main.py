@@ -25,16 +25,19 @@ firebase_config_env = os.getenv("FIREBASE_JSON")
 
 if firebase_config_env:
     try:
-        # Converte o texto da variável de ambiente em um dicionário (JSON)
-        cred_dict = json.loads(firebase_config_env)
-        cred = credentials.Certificate(cred_dict)
+        config_clean = firebase_config_env.strip()
+        cred_dict = json.loads(config_clean)
         
-        # Inicializa o Firebase apenas se ainda não foi inicializado
+        # O TRUQUE: Garante que os '\n' sejam interpretados corretamente
+        if "private_key" in cred_dict:
+            cred_dict["private_key"] = cred_dict["private_key"].replace("\\n", "\n")
+        
         if not firebase_admin._apps:
+            cred = credentials.Certificate(cred_dict)
             firebase_admin.initialize_app(cred)
-        print("✅ Firebase inicializado com sucesso via variável de ambiente!")
+            print("✅ Firebase inicializado com sucesso!")
     except Exception as e:
-        print(f"❌ Erro ao processar o JSON do Firebase: {e}")
+        print(f"❌ Erro ao processar o JSON: {e}")
 else:
     # Caso você queira testar localmente com o arquivo, ele tenta o arquivo se a variável não existir
     if os.path.exists("firebase-adminsdk.json"):
@@ -645,6 +648,7 @@ async def resultados_publicos(request: Request):
     </body>
     </html>
     """
+
 
 
 
