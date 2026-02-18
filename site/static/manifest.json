@@ -1,7 +1,7 @@
 {
   "name": "Santer Saúde",
   "short_name": "Santer",
-  "start_url": "/cadastro",
+  "start_url": "/login",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#1abc9c",
