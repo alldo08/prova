@@ -19,8 +19,30 @@ from fastapi import Form
 from fastapi.staticfiles import StaticFiles
 from firebase_admin import auth, credentials
 
-cred = credentials.Certificate("firebase-adminsdk.json")
-firebase_admin.initialize_app(cred)
+# 1. Tenta pegar o conteúdo da variável de ambiente que você criou no Render
+firebase_config_env = os.getenv("FIREBASE_JSON")
+
+if firebase_config_env:
+    try:
+        # Converte o texto da variável de ambiente em um dicionário (JSON)
+        cred_dict = json.loads(firebase_config_env)
+        cred = credentials.Certificate(cred_dict)
+        
+        # Inicializa o Firebase apenas se ainda não foi inicializado
+        if not firebase_admin._apps:
+            firebase_admin.initialize_app(cred)
+        print("✅ Firebase inicializado com sucesso via variável de ambiente!")
+    except Exception as e:
+        print(f"❌ Erro ao processar o JSON do Firebase: {e}")
+else:
+    # Caso você queira testar localmente com o arquivo, ele tenta o arquivo se a variável não existir
+    if os.path.exists("firebase-adminsdk.json"):
+        cred = credentials.Certificate("firebase-adminsdk.json")
+        if not firebase_admin._apps:
+            firebase_admin.initialize_app(cred)
+        print("✅ Firebase inicializado via arquivo local!")
+    else:
+        print("❌ CRÍTICO: Nenhuma configuração de Firebase encontrada (Variável ou Arquivo)!")
 
 # Isso diz: "Tudo que começar com /static, procure na pasta física chamada static"
 app = FastAPI()
@@ -619,6 +641,7 @@ async def resultados_publicos(request: Request):
     </body>
     </html>
     """
+
 
 
 
