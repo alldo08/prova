@@ -79,19 +79,24 @@ else:
 
 #auth#################
 
+class TokenBody(BaseModel):
+    token: str
+
 @app.post("/auth/callback")
-async def auth_callback(request: Request):
-    data = await request.json()
-    id_token = data.get("token")
-    
+async def auth_callback(body: TokenBody):
     try:
-        # Verifica se o token enviado pelo frontend é legítimo
-        decoded_token = auth.verify_id_token(id_token)
+        # 1. Verifica se o token enviado pelo Google é válido
+        decoded_token = auth.verify_id_token(body.token)
         uid = decoded_token['uid']
-        # Aqui você pode salvar o uid ou email na sessão/banco
+        email = decoded_token.get('email')
         
-        return JSONResponse(content={"status": "success", "uid": uid})
-    except Exception:
+        print(f"✅ Usuário autenticado: {email} (UID: {uid})")
+        
+        # Aqui você poderia criar uma sessão ou apenas retornar sucesso
+        return {"status": "success", "uid": uid, "email": email}
+        
+    except Exception as e:
+        print(f"❌ Erro ao verificar token: {e}")
         raise HTTPException(status_code=401, detail="Token inválido")
 # =============================
 # CONFIGURAÇÃO
@@ -660,6 +665,7 @@ async def resultados_publicos(request: Request):
     </body>
     </html>
     """
+
 
 
 
