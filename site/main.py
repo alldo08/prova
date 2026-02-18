@@ -18,6 +18,17 @@ from fastapi import Form
 from fastapi.staticfiles import StaticFiles
 
 # Isso diz: "Tudo que começar com /static, procure na pasta física chamada static"
+app = FastAPI()
+
+# 3. TERCEIRO: Configurar os arquivos estáticos (Agora o 'app' já existe!)
+# Dica: use o caminho absoluto para evitar erro no Render
+base_dir = os.path.dirname(os.path.realpath(__file__))
+static_path = os.path.join(base_dir, "static")
+
+if not os.path.exists(static_path):
+    os.makedirs(static_path) # Cria a pasta se ela não existir para não dar erro
+
+
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
 
@@ -565,6 +576,7 @@ async def resultados_publicos(request: Request):
     </body>
     </html>
     """
+
 
 
 
