@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Santer Saúde</title>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    
+    <link rel="manifest" href="/manifest.json">
+    <style>
+        body { font-family: Arial, sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; background: #f4f4f4; margin: 0; }
+        .login-card { background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); text-align: center; width: 90%; max-width: 400px; }
+        .btn-google { background: #4285F4; color: white; border: none; padding: 12px 20px; border-radius: 6px; font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center; width: 100%; gap: 10px; }
+        .btn-google:hover { background: #357ae8; }
+    </style>
+</head>
+<body>
+
+<div class="login-card">
+    <h2>Santer Saúde</h2>
+    <p>Acesse o portal do colaborador</p>
+    <button class="btn-google" onclick="loginComGoogle()">
+        <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" width="20" alt="Google">
+        Entrar com Google
+    </button>
+</div>
+
+<script>
+    // 1. Cole aqui a sua configuração encontrada no Console do Firebase
+    const firebaseConfig = {
+      apiKey: "AcbXX3KgvqD7B8Y4WjCu6yNx1Prfu5cNHz",
+      authDomain: "projeto-web-app-16adb.firebaseapp.com",
+      projectId: "projeto-web-app-16adb",
+      storageBucket: "projeto-web-app-16adb.firebasestorage.app",
+      messagingSenderId: "1011089630045",
+      appId: "1:1011089630045:web:af51e567641c9d919c7eb4",
+      measurementId: "G-HYFQ9QB1PL"
+    };
+
+    // Inicializa o Firebase
+    firebase.initializeApp(firebaseConfig);
+    const provider = new firebase.auth.GoogleAuthProvider();
+
+    // 2. Função de Login
+    async function loginComGoogle() {
+        try {
+            const result = await firebase.auth().signInWithPopup(provider);
+            const user = result.user;
+            const idToken = await user.getIdToken();
+
+            // Envia o token para o seu backend FastAPI validar e criar a sessão
+            const response = await fetch("/auth/callback", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ token: idToken })
+            });
+
+            if (response.ok) {
+                // Login confirmado no Python, vai para o perfil
+                window.location.href = "/perfil";
+            } else {
+                alert("Erro ao validar login no servidor.");
+            }
+        } catch (error) {
+            console.error("Erro no Firebase:", error);
+            alert("Falha na autenticação com Google.");
+        }
+    }
+
+    // 3. Verificação Automática (Se já estiver logado, pula o login)
+    firebase.auth().onAuthStateChanged((user) => {
+        if (user) {
+            window.location.href = "/perfil";
+        }
+    });
+</script>
+</body>
+</html>
