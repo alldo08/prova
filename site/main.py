@@ -20,6 +20,7 @@ from fastapi import Form
 from fastapi.staticfiles import StaticFiles
 from firebase_admin import auth, credentials
 import base64
+from pydantic import BaseModel                 # <--- ESTA LINHA ESTÁ FALTANDO
 # 1. Tenta pegar o conteúdo da variável de ambiente que você criou no Render
 # Tenta o caminho padrão de segredos do Render primeiro
 # Se não encontrar, tenta na raiz do projeto
@@ -665,6 +666,7 @@ async def resultados_publicos(request: Request):
     </body>
     </html>
     """
+
 
 
 
