@@ -101,6 +101,29 @@ def startup():
     except Exception as e:
         print("Erro no startup:", e)
 
+# 1. Rota para mostrar a página de perfil
+@app.get("/perfil", response_class=HTMLResponse)
+async def mostrar_perfil(request: Request):
+    return templates.TemplateResponse("perfil.html", {"request": request})
+
+# 2. Rota que recebe os dados do botão "Salvar"
+@app.post("/atualizar-perfil")
+async def processar_perfil(
+    peso: float = Form(...), 
+    qualidades: str = Form(...)
+):
+    # Aqui você usará o seu código do Supabase para dar o UPDATE
+    # UPDATE candidatos SET peso = %s, qualidades = %s WHERE email = ...
+    
+    print(f"Dados recebidos: Peso {peso}, Qualidades: {qualidades}")
+    
+    # Após salvar, você pode mandar ele para a página de plantões
+    return {"status": "Perfil Salvo!", "proximo_passo": "Ver Plantões"}
+
+
+
+
+
 @app.middleware("http")
 async def add_no_cache_headers(request: Request, call_next):
     response = await call_next(request)
@@ -536,6 +559,7 @@ async def resultados_publicos(request: Request):
     </body>
     </html>
     """
+
 
 
 
