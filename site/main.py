@@ -191,6 +191,27 @@ async def cadastrar_candidato(
     
     return HTMLResponse("<script>alert('Cadastro realizado com sucesso!'); window.location.href='/cadastro';</script>")
 
+@app.post("/api/salvar-usuario")
+async def salvar_usuario(dados: dict):
+    conn = get_db_connection()
+    cur = conn.cursor()
+    
+    # Verifica se o usuário já existe, se não, cria
+    cur.execute("""
+        INSERT INTO candidatos (nome, email, foto_url) 
+        VALUES (%s, %s, %s)
+        ON CONFLICT (email) DO UPDATE SET nome = EXCLUDED.nome
+    """, (dados['nome'], dados['email'], dados['foto']))
+    
+    conn.commit()
+    cur.close()
+    conn.close()
+    return {"status": "sucesso"}
+
+
+
+
+
 @app.get("/verificar_codigo/{codigo}")
 async def verificar_codigo(codigo: str):
     conn = get_db_connection()
@@ -515,6 +536,7 @@ async def resultados_publicos(request: Request):
     </body>
     </html>
     """
+
 
 
 
