@@ -21,8 +21,25 @@ from fastapi.staticfiles import StaticFiles
 from firebase_admin import auth, credentials
 import base64
 # 1. Tenta pegar o conteúdo da variável de ambiente que você criou no Render
-cred_path = "firebase-adminsdk.json"
+# Tenta o caminho padrão de segredos do Render primeiro
+# Se não encontrar, tenta na raiz do projeto
+if os.path.exists("/etc/secrets/firebase-adminsdk.json"):
+    cred_path = "/etc/secrets/firebase-adminsdk.json"
+elif os.path.exists("firebase-adminsdk.json"):
+    cred_path = "firebase-adminsdk.json"
+else:
+    cred_path = None
 
+if cred_path:
+    try:
+        if not firebase_admin._apps:
+            cred = credentials.Certificate(cred_path)
+            firebase_admin.initialize_app(cred)
+            print(f"✅ Firebase inicializado com sucesso usando: {cred_path}")
+    except Exception as e:
+        print(f"❌ Erro ao ler o arquivo de credenciais: {e}")
+else:
+    print("❌ Arquivo firebase-adminsdk.json NÃO encontrado em nenhum local!")
 if os.path.exists(cred_path):
     try:
         if not firebase_admin._apps:
@@ -643,6 +660,7 @@ async def resultados_publicos(request: Request):
     </body>
     </html>
     """
+
 
 
 
