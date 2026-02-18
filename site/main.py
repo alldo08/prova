@@ -1,4 +1,5 @@
 import os
+import json  # Adicione esta linha junto com os outros imports
 import random
 import secrets
 import pytz
@@ -644,6 +645,7 @@ async def resultados_publicos(request: Request):
     </body>
     </html>
     """
+
 
 
 
