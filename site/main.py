@@ -19,17 +19,20 @@ from fastapi.staticfiles import StaticFiles
 
 # Isso diz: "Tudo que começar com /static, procure na pasta física chamada static"
 app = FastAPI()
-print("Arquivos no servidor:", os.listdir("."))
-# Isso descobre exatamente onde o arquivo main.py está no servidor
-current_file_path = os.path.abspath(__file__)
-project_root = os.path.dirname(current_file_path)
-static_path = os.path.join(project_root, "static")
 
-# Monta a pasta verificando se ela existe
-if os.path.exists(static_path):
-    app.mount("/static", StaticFiles(directory=static_path), name="static")
+# 1. Localiza a pasta static de forma absoluta
+# Isso evita que o Render se perca entre pastas /src ou /app
+base_dir = os.path.dirname(os.path.abspath(__file__))
+static_dir = os.path.join(base_dir, "static")
+
+# 2. Log de depuração (vai aparecer no painel do Render)
+if os.path.exists(static_dir):
+    print(f"✅ PASTA STATIC ENCONTRADA EM: {static_dir}")
+    print(f"📄 ARQUIVOS DENTRO: {os.listdir(static_dir)}")
+    # Monta a pasta
+    app.mount("/static", StaticFiles(directory=static_dir), name="static")
 else:
-    print(f"AVISO: A pasta {static_path} não foi encontrada!")
+    print(f"❌ ERRO CRÍTICO: PASTA STATIC NÃO ENCONTRADA EM: {static_dir}")
 
 
 # =============================
@@ -576,6 +579,7 @@ async def resultados_publicos(request: Request):
     </body>
     </html>
     """
+
 
 
 
