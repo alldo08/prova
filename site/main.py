@@ -19,32 +19,35 @@ from fastapi.responses import StreamingResponse, FileResponse
 from fastapi import Form
 from fastapi.staticfiles import StaticFiles
 from firebase_admin import auth, credentials
-
+import base64
 # 1. Tenta pegar o conteúdo da variável de ambiente que você criou no Render
 firebase_config_env = os.getenv("FIREBASE_JSON")
 
 if firebase_config_env:
     try:
-        config_clean = firebase_config_env.strip()
-        cred_dict = json.loads(config_clean)
+        cred_dict = json.loads(firebase_config_env.strip())
         
         if "private_key" in cred_dict:
-            # 1. Remove barras invertidas duplas se houver
-            key = cred_dict["private_key"].replace("\\n", "\n")
-            # 2. Garante que as tags de início e fim estejam limpas
-            key = key.replace("-----BEGIN PRIVATE KEY-----", "").replace("-----END PRIVATE KEY-----", "")
-            key = key.replace(" ", "").replace("\n", "")
-            # 3. Reconstrói a chave no formato padrão RSA
-            formatted_key = f"-----BEGIN PRIVATE KEY-----\n{key}\n-----END PRIVATE KEY-----\n"
-            cred_dict["private_key"] = formatted_key
-        
+            pk = cred_dict["private_key"]
+            # Remove TUDO que não for a parte da chave em si
+            pk = pk.replace("-----BEGIN PRIVATE KEY-----", "")
+            pk = pk.replace("-----END PRIVATE KEY-----", "")
+            pk = pk.replace("\\n", "").replace("\n", "").replace(" ", "")
+            
+            # Reconstrói do zero no formato que o Google exige (linhas de 64 caracteres)
+            formatted_pk = "-----BEGIN PRIVATE KEY-----\n"
+            for i in range(0, len(pk), 64):
+                formatted_pk += pk[i:i+64] + "\n"
+            formatted_pk += "-----END PRIVATE KEY-----\n"
+            
+            cred_dict["private_key"] = formatted_pk
+    
         if not firebase_admin._apps:
             cred = credentials.Certificate(cred_dict)
             firebase_admin.initialize_app(cred)
             print("✅ Firebase inicializado com sucesso!")
-            
     except Exception as e:
-        print(f"❌ Erro ao processar o JSON: {e}")
+        print(f"❌ Erro final: {e}")
 else:
     # Caso você queira testar localmente com o arquivo, ele tenta o arquivo se a variável não existir
     if os.path.exists("firebase-adminsdk.json"):
@@ -655,6 +658,7 @@ async def resultados_publicos(request: Request):
     </body>
     </html>
     """
+
 
 
 
