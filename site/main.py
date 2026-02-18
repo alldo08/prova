@@ -86,7 +86,10 @@ timezone_br = pytz.timezone("America/Sao_Paulo")
 
 app = FastAPI()
 templates = Jinja2Templates(directory="templates")
-
+#entrar no auth
+@app.get("/entrar")
+async def login_page(request: Request):
+    return templates.TemplateResponse("entrar.html", {"request": request})
 # =============================
 # SISTEMA ANTI-SLEEP (RENDER)
 # =============================
@@ -641,6 +644,7 @@ async def resultados_publicos(request: Request):
     </body>
     </html>
     """
+
 
 
 
