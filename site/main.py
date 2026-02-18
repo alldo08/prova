@@ -18,18 +18,22 @@ from fastapi import Form
 from fastapi.staticfiles import StaticFiles
 
 # Isso diz: "Tudo que começar com /static, procure na pasta física chamada static"
-app = FastAPI()
+pp = FastAPI()
 
-# Forçando o caminho que o seu log mostrou que funciona:
-# O log disse: /opt/render/project/src/site/static
-static_path = "/opt/render/project/src/site/static"
+# Pega o caminho de onde o main.py está rodando no Render
+base_dir = os.path.dirname(os.path.abspath(__file__))
+static_path = os.path.join(base_dir, "static")
 
-# Se por acaso você mudar de servidor, esse código abaixo garante que funcione em qualquer lugar:
-if not os.path.exists(static_path):
-    base_dir = os.path.dirname(os.path.abspath(__file__))
-    static_path = os.path.join(base_dir, "static")
+# DEBUG: Isso vai nos confirmar no log se o caminho montado bate com o real
+print(f"Tentando montar a pasta em: {static_path}")
 
-app.mount("/static", StaticFiles(directory=static_path), name="static")
+if os.path.exists(static_path):
+    app.mount("/static", StaticFiles(directory=static_path), name="static")
+else:
+    # Caso o Render mude a estrutura, essa linha tenta o caminho que deu certo no seu log
+    fallback_path = "/opt/render/project/src/site/static"
+    if os.path.exists(fallback_path):
+        app.mount("/static", StaticFiles(directory=fallback_path), name="static"))
 
 
 # =============================
@@ -576,6 +580,7 @@ async def resultados_publicos(request: Request):
     </body>
     </html>
     """
+
 
 
 
