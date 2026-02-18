@@ -18,7 +18,7 @@ from fastapi import Form
 from fastapi.staticfiles import StaticFiles
 
 # Isso diz: "Tudo que começar com /static, procure na pasta física chamada static"
-pp = FastAPI()
+app = FastAPI()
 
 # Pega o caminho de onde o main.py está rodando no Render
 base_dir = os.path.dirname(os.path.abspath(__file__))
@@ -580,6 +580,7 @@ async def resultados_publicos(request: Request):
     </body>
     </html>
     """
+
 
 
 
