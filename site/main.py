@@ -21,33 +21,18 @@ from fastapi.staticfiles import StaticFiles
 from firebase_admin import auth, credentials
 import base64
 # 1. Tenta pegar o conteúdo da variável de ambiente que você criou no Render
-firebase_config_env = os.getenv("FIREBASE_JSON")
+cred_path = "firebase-adminsdk.json"
 
-if firebase_config_env:
+if os.path.exists(cred_path):
     try:
-        # Tenta decodificar de Base64 (mais seguro para transporte de chaves)
-        try:
-            decoded_bytes = base64.b64decode(firebase_config_env)
-            decoded_str = decoded_bytes.decode('utf-8')
-            cred_dict = json.loads(decoded_str)
-        except Exception:
-            # Se falhar, tenta ler como JSON direto (caso você não use Base64)
-            cred_dict = json.loads(firebase_config_env.strip())
-        
-        # Garante o formato da chave privada
-        if "private_key" in cred_dict:
-            pk = cred_dict["private_key"].replace("\\n", "\n")
-            if "-----BEGIN PRIVATE KEY-----" not in pk:
-                pk = f"-----BEGIN PRIVATE KEY-----\n{pk}\n-----END PRIVATE KEY-----\n"
-            cred_dict["private_key"] = pk
-
         if not firebase_admin._apps:
-            cred = credentials.Certificate(cred_dict)
+            cred = credentials.Certificate(cred_path)
             firebase_admin.initialize_app(cred)
-            print("✅ Firebase inicializado com sucesso!")
-            
+            print("✅ Firebase inicializado com sucesso usando Secret File!")
     except Exception as e:
-        print(f"❌ Erro Crítico Firebase: {e}")
+        print(f"❌ Erro ao ler o Secret File: {e}")
+else:
+    print("❌ Arquivo firebase-adminsdk.json não encontrado no servidor!")
 else:
     # Caso você queira testar localmente com o arquivo, ele tenta o arquivo se a variável não existir
     if os.path.exists("firebase-adminsdk.json"):
@@ -658,6 +643,7 @@ async def resultados_publicos(request: Request):
     </body>
     </html>
     """
+
 
 
 
