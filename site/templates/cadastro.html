@@ -99,6 +99,38 @@
           .then(() => console.log("Service Worker Registrado!"))
           .catch(err => console.log("Erro ao registrar SW:", err));
       }
+    let deferredPrompt;
+    const installContainer = document.getElementById('installContainer');
+    const btnInstalar = document.getElementById('btnInstalar');
+    
+    window.addEventListener('beforeinstallprompt', (e) => {
+        // Impede que o navegador mostre o banner padrão automático
+        e.preventDefault();
+        // Guarda o evento para ser disparado quando o usuário clicar no seu botão
+        deferredPrompt = e;
+        // Mostra o seu botão personalizado
+        installContainer.style.display = 'block';
+    });
+    
+    btnInstalar.addEventListener('click', async () => {
+        if (deferredPrompt) {
+            // Mostra a caixa de diálogo de instalação
+            deferredPrompt.prompt();
+            // Espera a resposta do usuário
+            const { outcome } = await deferredPrompt.userChoice;
+            console.log(`Usuário respondeu à instalação: ${outcome}`);
+            // Limpa o evento, pois só pode ser usado uma vez
+            deferredPrompt = null;
+            installContainer.style.display = 'none';
+        }
+    });
+    
+    // Esconde o botão se o app já estiver instalado
+    window.addEventListener('appinstalled', () => {
+        installContainer.style.display = 'none';
+        console.log('App instalado com sucesso!');
+    });
+        
     </script>
         
 </body>
