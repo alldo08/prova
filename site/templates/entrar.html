@@ -9,10 +9,12 @@
     
     <link rel="manifest" href="/manifest.json">
     <style>
-        body { font-family: Arial, sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; background: #f4f4f4; margin: 0; }
-        .login-card { background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); text-align: center; width: 90%; max-width: 400px; }
-        .btn-google { background: #4285F4; color: white; border: none; padding: 12px 20px; border-radius: 6px; font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center; width: 100%; gap: 10px; }
-        .btn-google:hover { background: #357ae8; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; background: #eef2f7; margin: 0; }
+        .login-card { background: white; padding: 2.5rem; border-radius: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.08); text-align: center; width: 90%; max-width: 380px; }
+        h2 { color: #2c3e50; margin-bottom: 0.5rem; }
+        p { color: #7f8c8d; margin-bottom: 2rem; }
+        .btn-google { background: white; color: #555; border: 1px solid #ddd; padding: 12px 20px; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; width: 100%; gap: 12px; transition: all 0.3s ease; }
+        .btn-google:hover { background: #f8f9fa; border-color: #bbb; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
     </style>
 </head>
 <body>
@@ -20,36 +22,37 @@
 <div class="login-card">
     <h2>Santer Saúde</h2>
     <p>Acesse o portal do colaborador</p>
-    <button class="btn-google" onclick="loginComGoogle()">
+    <button class="btn-google" id="btnLogin" onclick="loginComGoogle()">
         <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" width="20" alt="Google">
         Entrar com Google
     </button>
 </div>
 
 <script>
-    // 1. Cole aqui a sua configuração encontrada no Console do Firebase
+    // IMPORTANTE: Verifique se esta API Key é a que começa com "AIza..." 
+    // encontrada em: Console Firebase > Configurações do Projeto
     const firebaseConfig = {
       apiKey: "AcbXX3KgvqD7B8Y4WjCu6yNx1Prfu5cNHz",
       authDomain: "projeto-web-app-16adb.firebaseapp.com",
       projectId: "projeto-web-app-16adb",
       storageBucket: "projeto-web-app-16adb.firebasestorage.app",
       messagingSenderId: "1011089630045",
-      appId: "1:1011089630045:web:af51e567641c9d919c7eb4",
-      measurementId: "G-HYFQ9QB1PL"
+      appId: "1:1011089630045:web:3afc16a9817f11409c7eb4",
+      measurementId: "G-12TW5Q57JE"
     };
 
-    // Inicializa o Firebase
     firebase.initializeApp(firebaseConfig);
     const provider = new firebase.auth.GoogleAuthProvider();
 
-    // 2. Função de Login
     async function loginComGoogle() {
+        const btn = document.getElementById('btnLogin');
+        btn.disabled = true;
+        btn.innerText = "Carregando...";
+
         try {
             const result = await firebase.auth().signInWithPopup(provider);
-            const user = result.user;
-            const idToken = await user.getIdToken();
+            const idToken = await result.user.getIdToken();
 
-            // Envia o token para o seu backend FastAPI validar e criar a sessão
             const response = await fetch("/auth/callback", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -57,22 +60,29 @@
             });
 
             if (response.ok) {
-                // Login confirmado no Python, vai para o perfil
                 window.location.href = "/perfil";
             } else {
-                alert("Erro ao validar login no servidor.");
+                throw new Error("Erro na validação do servidor.");
             }
         } catch (error) {
-            console.error("Erro no Firebase:", error);
-            alert("Falha na autenticação com Google.");
+            console.error("Erro detalhado:", error);
+            alert("Erro: " + error.message);
+            btn.disabled = false;
+            btn.innerHTML = `<img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" width="20"> Entrar com Google`;
         }
     }
 
-    // 3. Verificação Automática (Se já estiver logado, pula o login)
+    // Registro do Service Worker para o PWA funcionar
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('/sw.js')
+                .then(reg => console.log('SW registrado!', reg))
+                .catch(err => console.err('Erro SW', err));
+        });
+    }
+
     firebase.auth().onAuthStateChanged((user) => {
-        if (user) {
-            window.location.href = "/perfil";
-        }
+        if (user) { window.location.href = "/perfil"; }
     });
 </script>
 </body>
