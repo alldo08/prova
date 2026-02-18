@@ -14,7 +14,7 @@ from fastapi import FastAPI, Request, Form, HTTPException
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.responses import StreamingResponse
-
+from fastapi import Form
 # =============================
 # CONFIGURAÇÃO
 # =============================
@@ -536,6 +536,7 @@ async def resultados_publicos(request: Request):
     </body>
     </html>
     """
+
 
 
 
