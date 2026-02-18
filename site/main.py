@@ -28,14 +28,21 @@ if firebase_config_env:
         config_clean = firebase_config_env.strip()
         cred_dict = json.loads(config_clean)
         
-        # O TRUQUE: Garante que os '\n' sejam interpretados corretamente
         if "private_key" in cred_dict:
-            cred_dict["private_key"] = cred_dict["private_key"].replace("\\n", "\n")
+            # 1. Remove barras invertidas duplas se houver
+            key = cred_dict["private_key"].replace("\\n", "\n")
+            # 2. Garante que as tags de início e fim estejam limpas
+            key = key.replace("-----BEGIN PRIVATE KEY-----", "").replace("-----END PRIVATE KEY-----", "")
+            key = key.replace(" ", "").replace("\n", "")
+            # 3. Reconstrói a chave no formato padrão RSA
+            formatted_key = f"-----BEGIN PRIVATE KEY-----\n{key}\n-----END PRIVATE KEY-----\n"
+            cred_dict["private_key"] = formatted_key
         
         if not firebase_admin._apps:
             cred = credentials.Certificate(cred_dict)
             firebase_admin.initialize_app(cred)
             print("✅ Firebase inicializado com sucesso!")
+            
     except Exception as e:
         print(f"❌ Erro ao processar o JSON: {e}")
 else:
@@ -648,6 +655,7 @@ async def resultados_publicos(request: Request):
     </body>
     </html>
     """
+
 
 
 
