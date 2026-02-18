@@ -19,7 +19,7 @@ from fastapi.staticfiles import StaticFiles
 
 # Isso diz: "Tudo que começar com /static, procure na pasta física chamada static"
 app = FastAPI()
-
+print("Arquivos no servidor:", os.listdir("."))
 # Isso descobre exatamente onde o arquivo main.py está no servidor
 current_file_path = os.path.abspath(__file__)
 project_root = os.path.dirname(current_file_path)
@@ -576,6 +576,7 @@ async def resultados_publicos(request: Request):
     </body>
     </html>
     """
+
 
 
 
