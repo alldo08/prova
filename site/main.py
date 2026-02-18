@@ -3,6 +3,7 @@ import random
 import secrets
 import pytz
 import asyncio
+import firebase_admin
 import httpx
 from datetime import datetime
 from copy import deepcopy
@@ -16,6 +17,10 @@ from fastapi.templating import Jinja2Templates
 from fastapi.responses import StreamingResponse, FileResponse
 from fastapi import Form
 from fastapi.staticfiles import StaticFiles
+from firebase_admin import auth, credentials
+
+cred = credentials.Certificate("firebase-adminsdk.json")
+firebase_admin.initialize_app(cred)
 
 # Isso diz: "Tudo que começar com /static, procure na pasta física chamada static"
 app = FastAPI()
@@ -34,7 +39,22 @@ if os.path.exists(static_path):
 else:
     print("❌ ERRO: Pasta static não encontrada em lugar nenhum!")
 
+#auth#################
 
+@app.post("/auth/callback")
+async def auth_callback(request: Request):
+    data = await request.json()
+    id_token = data.get("token")
+    
+    try:
+        # Verifica se o token enviado pelo frontend é legítimo
+        decoded_token = auth.verify_id_token(id_token)
+        uid = decoded_token['uid']
+        # Aqui você pode salvar o uid ou email na sessão/banco
+        
+        return JSONResponse(content={"status": "success", "uid": uid})
+    except Exception:
+        raise HTTPException(status_code=401, detail="Token inválido")
 # =============================
 # CONFIGURAÇÃO
 # =============================
@@ -599,6 +619,7 @@ async def resultados_publicos(request: Request):
     </body>
     </html>
     """
+
 
 
 
