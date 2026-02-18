@@ -72,7 +72,15 @@ async def get_sw():
 async def get_manifest():
     return FileResponse(os.path.join(static_path, "manifest.json"))
 
+# ROTAAAAAAAAAAAAAAAAA
 
+@app.get("/static/icon-192.png")
+async def get_icon():
+    # Isso força o servidor a cuspir o arquivo, não importa o que aconteça
+    icon_path = os.path.join(static_path, "icon-192.png")
+    if os.path.exists(icon_path):
+        return FileResponse(icon_path)
+    return {"erro": f"Arquivo nao encontrado no caminho: {icon_path}"}
 
 # =============================
 # BANCO DE DADOS
@@ -591,6 +599,7 @@ async def resultados_publicos(request: Request):
     </body>
     </html>
     """
+
 
 
 
