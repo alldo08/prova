@@ -72,13 +72,12 @@
     <script>
         async function carregarSugestoesBairros() {
             try {
-                // Busca a lista de bairros da sua nova rota no Python
                 const resposta = await fetch('/api/bairros');
                 if (resposta.ok) {
                     const bairros = await resposta.json();
                     const datalist = document.getElementById('listaBairros');
                     
-                    datalist.innerHTML = ""; // Limpa a lista antes de preencher
+                    datalist.innerHTML = ""; 
                     bairros.forEach(bairro => {
                         const opcao = document.createElement('option');
                         opcao.value = bairro;
@@ -89,15 +88,14 @@
                 console.error("Erro ao carregar lista de bairros:", erro);
             }
         }
-
-        // Executa a função assim que a página termina de carregar
+    
         window.onload = carregarSugestoesBairros;
-    <script>
-      if ('serviceWorker' in navigator) {
+    </script> <script> if ('serviceWorker' in navigator) {
         navigator.serviceWorker.register('/static/sw.js')
-          .then(() => console.log("Service Worker Registrado!"));
+          .then(() => console.log("Service Worker Registrado!"))
+          .catch(err => console.log("Erro ao registrar SW:", err));
       }
     </script>
-    
+        
 </body>
 </html>
