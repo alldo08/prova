@@ -28,37 +28,51 @@
     </button>
     <div id="status">Verificando autorização...</div>
 </div>
+
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
-    import { getAuth, GoogleAuthProvider, signInWithRedirect, getRedirectResult, signOut } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
+    import { getAuth, GoogleAuthProvider, signInWithPopup, signOut } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
 
     console.log("TESTE: O script de login carregou com sucesso.");
 
     const firebaseConfig = {
-        apiKey: "AIzaSyCGkSCkznXVBanRx5gDgeVSRS2mJU90UT8",
-        authDomain: "projeto-web-app-16adb.firebaseapp.com",
-        projectId: "projeto-web-app-16adb",
-        storageBucket: "projeto-web-app-16adb.firebasestorage.app",
-        messagingSenderId: "1011089630045",
-        appId: "1:1011089630045:web:3afc16a9817f11409c7eb4",
-        measurementId: "G-12TW5Q57JE"
-    };
+          apiKey: "AIzaSyCGkSCkznXVBanRx5gDgeVSRS2mJU90UT8",
+          authDomain: "projeto-web-app-16adb.firebaseapp.com",
+          projectId: "projeto-web-app-16adb",
+          storageBucket: "projeto-web-app-16adb.firebasestorage.app",
+          messagingSenderId: "1011089630045",
+          appId: "1:1011089630045:web:3afc16a9817f11409c7eb4",
+          measurementId: "G-12TW5Q57JE"
+        };
+
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const provider = new GoogleAuthProvider();
 
-    // Exporta a função para o botão HTML
-    window.loginComGoogle = function() {
-        console.log("Botão clicado!");
-        signInWithRedirect(auth, provider);
-    };
+    // Exporta a função para o botão HTML usando o método POPUP
+    window.loginComGoogle = async function() {
+        const btn = document.getElementById('btnLogin');
+        const btnText = document.getElementById('btnText');
+        const statusDiv = document.getElementById('status');
 
-    // PROCESSA O RETORNO DO GOOGLE
-    getRedirectResult(auth).then(async (result) => {
-        if (result && result.user) {
-            console.log("Firebase OK. Chamando Python...");
-            const idToken = await result.user.getIdToken();
+        console.log("Botão clicado - Iniciando Popup...");
+        
+        btn.disabled = true;
+        btnText.innerText = "Conectando...";
+
+        try {
+            // 1. Abre a janelinha do Google
+            const result = await signInWithPopup(auth, provider);
+            const user = result.user;
             
+            console.log("Firebase OK: ", user.email);
+            statusDiv.style.display = 'block';
+            statusDiv.innerText = "Autenticado! Validando com servidor...";
+
+            // 2. Obtém o Token
+            const idToken = await user.getIdToken();
+
+            // 3. Envia para o Python
             const response = await fetch("/auth/callback", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -66,16 +80,42 @@
             });
 
             if (response.ok) {
-                console.log("Python OK! Redirecionando...");
+                console.log("Servidor Python OK! Redirecionando...");
+                statusDiv.innerText = "Acesso garantido! Entrando...";
                 window.location.replace("/perfil"); 
             } else {
-                console.error("O servidor Python recusou o token.");
-                alert("Erro na autorização do servidor.");
+                const errorData = await response.json();
+                console.error("Servidor Python recusou o acesso.");
+                alert("Acesso negado: " + (errorData.detail || "Usuário não autorizado no banco."));
+                await signOut(auth);
+                resetBotao();
             }
+
+        } catch (error) {
+            console.error("Erro no processo de login:", error);
+            alert("Erro ao realizar login com Google. Tente novamente.");
+            resetBotao();
         }
-    }).catch(error => {
-        console.error("Erro no GetRedirectResult:", error);
-    });
+    };
+
+    function resetBotao() {
+        const btn = document.getElementById('btnLogin');
+        const btnText = document.getElementById('btnText');
+        const statusDiv = document.getElementById('status');
+        btn.disabled = false;
+        btnText.innerText = "Entrar com Google";
+        statusDiv.style.display = 'none';
+    }
+
+    // DESATIVADO: Service Worker bloqueado para evitar interferência no redirecionamento/cache
+    /*
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('/sw.js').catch(err => console.log('Erro SW', err));
+        });
+    }
+    */
 </script>
+
 </body>
 </html>
