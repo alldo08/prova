@@ -63,6 +63,7 @@ else:
 
 # Isso diz: "Tudo que começar com /static, procure na pasta física chamada static"
 app = FastAPI()
+templates = Jinja2Templates(directory="templates")
 
 # 1. Tenta o caminho relativo ao arquivo main.py
 base_dir = os.path.dirname(os.path.abspath(__file__))
@@ -93,12 +94,6 @@ def usuario_logado(request: Request):
 @app.get("/entrar")
 async def login_page(request: Request):
     return templates.TemplateResponse("entrar.html", {"request": request})
-
-#logout#
-@app.get("/logout") # Certifique-se de que não há espaços extras aqui
-async def logout(response: Response):
-    response.delete_cookie("session_user")
-    return RedirectResponse(url="/entrar", status_code=303)
 
 #Auth#
 @app.post("/auth/callback")
@@ -139,6 +134,15 @@ async def auth_callback(body: TokenBody, response: Response):
             raise HTTPException(status_code=403, detail="E-mail não autorizado.")
         raise HTTPException(status_code=401, detail="Token inválido.")
 
+#logout#
+@app.get("/logout")
+async def logout(): # Remova o parâmetro response daqui se não for usar cookie manual
+    response = RedirectResponse(url="/entrar", status_code=303)
+    response.delete_cookie("session_user")
+    return response
+
+
+
 #acesso
 @app.get("/admin/acessos")
 async def pagina_gestao_acessos(request: Request):
@@ -146,7 +150,7 @@ async def pagina_gestao_acessos(request: Request):
     user_admin = request.cookies.get("session_user", "").strip().lower()
     
     # Coloque o seu e-mail EXATAMENTE assim: todo em minúsculo
-    EMAIL_DONO = "seu-email@gmail.com" 
+    EMAIL_DONO = "chasealdorobert@gmail.com" 
 
     if user_admin != EMAIL_DONO:
         print(f"Tentativa de admin negada para: {user_admin}") # Isso aparecerá no log do Render
@@ -177,8 +181,6 @@ app.mount("/static", StaticFiles(directory=static_dir), name="static")
 DATABASE_URL = os.getenv("DATABASE_URL").strip()
 timezone_br = pytz.timezone("America/Sao_Paulo")
 
-app = FastAPI()
-templates = Jinja2Templates(directory="templates")
 # =============================
 # SISTEMA ANTI-SLEEP (RENDER)
 # =============================
@@ -749,6 +751,7 @@ async def resultados_publicos(request: Request):
     </body>
     </html>
     """
+
 
 
 
