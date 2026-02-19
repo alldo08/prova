@@ -89,18 +89,17 @@ def usuario_logado(request: Request):
         return None
     return user
 
-@app.get("/perfil")
-async def pagina_perfil(request: Request):
-    user = usuario_logado(request)
-    if not user:
-        return RedirectResponse(url="/entrar?erro=faca_login")
-    
-    return templates.TemplateResponse("perfil.html", {"request": request, "email": user})
+#entrar no auth
+@app.get("/entrar")
+async def login_page(request: Request):
+    return templates.TemplateResponse("entrar.html", {"request": request})
+
 #logout#
 @app.get("/logout") # Certifique-se de que não há espaços extras aqui
 async def logout(response: Response):
     response.delete_cookie("session_user")
     return RedirectResponse(url="/entrar", status_code=303)
+
 #Auth#
 @app.post("/auth/callback")
 async def auth_callback(body: TokenBody, response: Response):
@@ -139,6 +138,37 @@ async def auth_callback(body: TokenBody, response: Response):
         if "403" in str(e):
             raise HTTPException(status_code=403, detail="E-mail não autorizado.")
         raise HTTPException(status_code=401, detail="Token inválido.")
+
+#acesso
+@app.get("/admin/acessos")
+async def pagina_gestao_acessos(request: Request):
+    # Pega o e-mail do cookie e limpa espaços/letras grandes
+    user_admin = request.cookies.get("session_user", "").strip().lower()
+    
+    # Coloque o seu e-mail EXATAMENTE assim: todo em minúsculo
+    EMAIL_DONO = "seu-email@gmail.com" 
+
+    if user_admin != EMAIL_DONO:
+        print(f"Tentativa de admin negada para: {user_admin}") # Isso aparecerá no log do Render
+        # O status_code=303 força o navegador a mudar de página
+        return RedirectResponse(url="/perfil?erro=privilegio", status_code=303)
+
+    db = firestore.client()
+    docs = db.collection("permissoes").stream()
+    usuarios = [{"email": doc.id} for doc in docs]
+
+    return templates.TemplateResponse("gestao_acessos.html", {"request": request, "usuarios": usuarios})
+
+@app.get("/perfil")
+async def pagina_perfil(request: Request):
+    user = usuario_logado(request)
+    if not user:
+        return RedirectResponse(url="/entrar?erro=faca_login")
+    
+    return templates.TemplateResponse("perfil.html", {"request": request, "email": user})
+
+app.mount("/static", StaticFiles(directory="site/static"), name="static")
+
 # =============================
 # CONFIGURAÇÃO
 # =============================
@@ -148,10 +178,6 @@ timezone_br = pytz.timezone("America/Sao_Paulo")
 
 app = FastAPI()
 templates = Jinja2Templates(directory="templates")
-#entrar no auth
-@app.get("/entrar")
-async def login_page(request: Request):
-    return templates.TemplateResponse("entrar.html", {"request": request})
 # =============================
 # SISTEMA ANTI-SLEEP (RENDER)
 # =============================
@@ -523,24 +549,6 @@ async def autorizar_email(email_novo: str, request: Request):
     })
     return {"message": f"E-mail {email_novo} autorizado com sucesso!"}
 
-@app.get("/admin/acessos")
-async def pagina_gestao_acessos(request: Request):
-    # Pega o e-mail do cookie e limpa espaços/letras grandes
-    user_admin = request.cookies.get("session_user", "").strip().lower()
-    
-    # Coloque o seu e-mail EXATAMENTE assim: todo em minúsculo
-    EMAIL_DONO = "seu-email@gmail.com" 
-
-    if user_admin != EMAIL_DONO:
-        print(f"Tentativa de admin negada para: {user_admin}") # Isso aparecerá no log do Render
-        # O status_code=303 força o navegador a mudar de página
-        return RedirectResponse(url="/perfil?erro=privilegio", status_code=303)
-
-    db = firestore.client()
-    docs = db.collection("permissoes").stream()
-    usuarios = [{"email": doc.id} for doc in docs]
-
-    return templates.TemplateResponse("gestao_acessos.html", {"request": request, "usuarios": usuarios})
 @app.post("/gerar")
 async def gerar_codigo():
     codigo = secrets.token_hex(3).upper()
@@ -740,6 +748,7 @@ async def resultados_publicos(request: Request):
     </body>
     </html>
     """
+
 
 
 
