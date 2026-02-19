@@ -330,23 +330,26 @@ async def mostrar_perfil(request: Request):
 async def atualizar_perfil(request: Request):
     user_email = request.session.get("user_email")
     if not user_email:
-        return {"status": "error", "message": "Não logado"}, 401
+        return {"status": "error", "detail": "Sessão expirada. Logue novamente."}, 401
 
-    data = await request.json()
-    
-    # Salva no Firestore atrelado ao email logado
-    db.collection("usuarios_perfil").document(user_email).set({
-        "email": user_email,
-        "peso": data.get("peso"),
-        "altura": data.get("altura"),
-        "qualidades": data.get("qualidades"),
-        "foto": data.get("foto"), # Salva a string da imagem
-        "ultima_atualizacao": firestore.SERVER_TIMESTAMP
-    }, merge=True) # merge=True para não apagar outros campos se existirem
+    try:
+        data = await request.json() # Captura os dados enviados pelo JavaScript
+        
+        # Salva no Firestore
+        db.collection("usuarios_perfil").document(user_email).set({
+            "nome": data.get("nome"),
+            "peso": data.get("peso"),
+            "altura": data.get("altura"),
+            "qualidades": data.get("qualidades"),
+            "foto": data.get("foto"), # Aqui vai a string da imagem
+            "email": user_email,
+            "atualizado_em": firestore.SERVER_TIMESTAMP
+        }, merge=True)
 
-    return {"status": "success"}
-
-
+        return {"status": "success"}
+    except Exception as e:
+        print(f"Erro no servidor: {e}")
+        return {"status": "error", "detail": str(e)}, 500
 
 
 
@@ -801,6 +804,7 @@ async def resultados_publicos(request: Request):
     </body>
     </html>
     """
+
 
 
 
