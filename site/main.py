@@ -60,6 +60,7 @@ else:
     else:
         print("❌ CRÍTICO: Nenhuma configuração de Firebase encontrada (Variável ou Arquivo)!")
 
+db = firestore.client()
 # Isso diz: "Tudo que começar com /static, procure na pasta física chamada static"
 app = FastAPI()
 templates = Jinja2Templates(directory="templates")
@@ -779,6 +780,7 @@ async def resultados_publicos(request: Request):
     </body>
     </html>
     """
+
 
 
 
