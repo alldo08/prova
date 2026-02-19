@@ -180,8 +180,7 @@ app.mount("/static", StaticFiles(directory=static_dir), name="static")
 
 
 # =============================
-db = firestore.client()
-
+db.collection("permissoes").document(email).set({...})
 @app.post("/admin/adicionar")
 async def adicionar_acesso(request: Request):
     data = await request.json()
@@ -780,6 +779,7 @@ async def resultados_publicos(request: Request):
     </body>
     </html>
     """
+
 
 
 
