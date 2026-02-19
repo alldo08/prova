@@ -196,7 +196,24 @@ async def adicionar_permissao(request: Request):
     
     return {"status": "error", "message": "Email não fornecido"}, 400
 
+###
+@app.post("/admin/remover")
+async def remover_permissao(request: Request):
+    try:
+        data = await request.json()
+        email = data.get("email")
+        
+        if not email:
+            return {"status": "error", "message": "Email não informado"}, 400
 
+        # Remove o documento do Firestore
+        db.collection("permissoes").document(email).delete()
+        
+        print(f"Sucesso: {email} removido das permissões.")
+        return {"status": "success"}
+    except Exception as e:
+        print(f"Erro ao remover: {e}")
+        return {"status": "error", "message": str(e)}, 500
 # CONFIGURAÇÃO
 # =============================
 
@@ -776,6 +793,7 @@ async def resultados_publicos(request: Request):
     </body>
     </html>
     """
+
 
 
 
