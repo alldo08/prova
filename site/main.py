@@ -123,7 +123,7 @@ async def auth_callback(body: TokenBody, response: Response):
         # if not dados.get("ativo"): raise ...
 
         print(f"✅ Acesso liberado via DB: {email}")
-        
+        print(f"DEBUG: O e-mail logado é: '{email}'")
         # Cria o cookie de sessão para as próximas páginas
         response.set_cookie(
             key="session_user", 
@@ -525,19 +525,22 @@ async def autorizar_email(email_novo: str, request: Request):
 
 @app.get("/admin/acessos")
 async def pagina_gestao_acessos(request: Request):
-    user_admin = request.cookies.get("session_user")
-    # Coloque seu e-mail aqui
-    if user_admin != "seu-email-admin@gmail.com":
-        return RedirectResponse(url="/entrar?erro=privilegio_insuficiente")
+    # Pega o e-mail do cookie e limpa espaços/letras grandes
+    user_admin = request.cookies.get("session_user", "").strip().lower()
+    
+    # Coloque o seu e-mail EXATAMENTE assim: todo em minúsculo
+    EMAIL_DONO = "seu-email@gmail.com" 
+
+    if user_admin != EMAIL_DONO:
+        print(f"Tentativa de admin negada para: {user_admin}") # Isso aparecerá no log do Render
+        # O status_code=303 força o navegador a mudar de página
+        return RedirectResponse(url="/perfil?erro=privilegio", status_code=303)
 
     db = firestore.client()
     docs = db.collection("permissoes").stream()
-    
     usuarios = [{"email": doc.id} for doc in docs]
 
-    # Aqui você usa o nome que quiser para o arquivo HTML
     return templates.TemplateResponse("gestao_acessos.html", {"request": request, "usuarios": usuarios})
-
 @app.post("/gerar")
 async def gerar_codigo():
     codigo = secrets.token_hex(3).upper()
@@ -737,6 +740,7 @@ async def resultados_publicos(request: Request):
     </body>
     </html>
     """
+
 
 
 
