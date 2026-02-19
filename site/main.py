@@ -327,17 +327,24 @@ async def mostrar_perfil(request: Request):
 
 # 2. Rota que recebe os dados do botão "Salvar"
 @app.post("/atualizar-perfil")
-async def processar_perfil(
-    peso: float = Form(...), 
-    qualidades: str = Form(...)
-):
-    # Aqui você usará o seu código do Supabase para dar o UPDATE
-    # UPDATE candidatos SET peso = %s, qualidades = %s WHERE email = ...
+async def atualizar_perfil(request: Request):
+    user_email = request.session.get("user_email")
+    if not user_email:
+        return {"status": "error", "message": "Não logado"}, 401
+
+    data = await request.json()
     
-    print(f"Dados recebidos: Peso {peso}, Qualidades: {qualidades}")
-    
-    # Após salvar, você pode mandar ele para a página de plantões
-    return {"status": "Perfil Salvo!", "proximo_passo": "Ver Plantões"}
+    # Salva no Firestore atrelado ao email logado
+    db.collection("usuarios_perfil").document(user_email).set({
+        "email": user_email,
+        "peso": data.get("peso"),
+        "altura": data.get("altura"),
+        "qualidades": data.get("qualidades"),
+        "foto": data.get("foto"), # Salva a string da imagem
+        "ultima_atualizacao": firestore.SERVER_TIMESTAMP
+    }, merge=True) # merge=True para não apagar outros campos se existirem
+
+    return {"status": "success"}
 
 
 
@@ -794,6 +801,7 @@ async def resultados_publicos(request: Request):
     </body>
     </html>
     """
+
 
 
 
