@@ -16,7 +16,7 @@ from fastapi import FastAPI, Request, Form, HTTPException
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.responses import StreamingResponse, FileResponse
-from fastapi import Form
+from fastapi import Form, Response
 from fastapi.staticfiles import StaticFiles
 from firebase_admin import auth, credentials
 import base64
@@ -738,6 +738,7 @@ async def resultados_publicos(request: Request):
     </body>
     </html>
     """
+
 
 
 
