@@ -138,6 +138,7 @@ async def auth_callback(body: TokenBody):
 async def logout(): # Remova o parâmetro response daqui se não for usar cookie manual
     response = RedirectResponse(url="/entrar", status_code=303)
     response.delete_cookie("session_user")
+    request.session.clear()
     return response
 
 
@@ -793,6 +794,7 @@ async def resultados_publicos(request: Request):
     </body>
     </html>
     """
+
 
 
 
