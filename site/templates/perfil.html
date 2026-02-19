@@ -29,5 +29,11 @@
     </form>
 </div>
 
+<script>
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('erro') === 'privilegio') {
+        alert("⛔ Você não tem permissão para acessar a área de gestão.");
+    }
+</script>
 </body>
 </html>
