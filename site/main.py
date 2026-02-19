@@ -96,7 +96,12 @@ async def pagina_perfil(request: Request):
         return RedirectResponse(url="/entrar?erro=faca_login")
     
     return templates.TemplateResponse("perfil.html", {"request": request, "email": user})
-
+#logout#
+@app.get("/logout")
+async def logout(response: Response):
+    # Isso remove o cookie de sessão do navegador
+    response.delete_cookie("session_user")
+    return RedirectResponse(url="/entrar")
 #Auth#
 @app.post("/auth/callback")
 async def auth_callback(body: TokenBody, response: Response):
@@ -733,6 +738,7 @@ async def resultados_publicos(request: Request):
     </body>
     </html>
     """
+
 
 
 
