@@ -5,9 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login - Santer Saúde</title>
     
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-    
     <link rel="manifest" href="/manifest.json">
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; background: #eef2f7; margin: 0; }
@@ -33,13 +30,9 @@
 </div>
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
-    import { 
-        getAuth, 
-        GoogleAuthProvider, 
-        signInWithRedirect, 
-        getRedirectResult,
-        signOut 
-    } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
+    import { getAuth, GoogleAuthProvider, signInWithRedirect, getRedirectResult, signOut } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
+
+    console.log("TESTE: O script de login carregou com sucesso.");
 
     const firebaseConfig = {
         apiKey: "AIzaSyCGkSCkznXVBanRx5gDgeVSRS2mJU90UT8",
@@ -50,48 +43,39 @@
         appId: "1:1011089630045:web:3afc16a9817f11409c7eb4",
         measurementId: "G-12TW5Q57JE"
     };
-
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const provider = new GoogleAuthProvider();
 
-    // 1. FUNÇÃO DO BOTÃO - Só dispara se o usuário CLICAR
+    // Exporta a função para o botão HTML
     window.loginComGoogle = function() {
-        console.log("Botão clicado, iniciando redirect...");
+        console.log("Botão clicado!");
         signInWithRedirect(auth, provider);
     };
 
-    // 2. PROCESSA O RESULTADO (Isso roda quando você volta do Google)
+    // PROCESSA O RETORNO DO GOOGLE
     getRedirectResult(auth).then(async (result) => {
         if (result && result.user) {
-            console.log("Sucesso no Firebase! Validando com o servidor Python...");
+            console.log("Firebase OK. Chamando Python...");
             const idToken = await result.user.getIdToken();
             
-            try {
-                const response = await fetch("/auth/callback", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ token: idToken })
-                });
+            const response = await fetch("/auth/callback", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ token: idToken })
+            });
 
-                if (response.ok) {
-                    console.log("Servidor Python autorizou!");
-                    window.location.replace("/perfil"); 
-                } else {
-                    const data = await response.json();
-                    alert("Erro no servidor: " + (data.detail || "Acesso negado"));
-                    await signOut(auth);
-                }
-            } catch (err) {
-                console.error("Erro na chamada do backend:", err);
+            if (response.ok) {
+                console.log("Python OK! Redirecionando...");
+                window.location.replace("/perfil"); 
+            } else {
+                console.error("O servidor Python recusou o token.");
+                alert("Erro na autorização do servidor.");
             }
         }
-    }).catch((error) => {
-        console.error("Erro no processamento do login:", error);
+    }).catch(error => {
+        console.error("Erro no GetRedirectResult:", error);
     });
-
-    // 3. REMOVI O onAuthStateChanged DAQUI.
-    // Ele costuma causar loops se houver conflito de sessão com o servidor.
 </script>
 </body>
 </html>
