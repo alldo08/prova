@@ -32,7 +32,6 @@
     <div id="status">Verificando autorização...</div>
 </div>
 <script type="module">
-    // 1. Importações necessárias da versão 9+
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
     import { 
         getAuth, 
@@ -43,7 +42,6 @@
         signOut 
     } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
 
-    // 2. Configuração do seu Firebase
     const firebaseConfig = {
         apiKey: "AIzaSyCGkSCkznXVBanRx5gDgeVSRS2mJU90UT8",
         authDomain: "projeto-web-app-16adb.firebaseapp.com",
@@ -54,81 +52,44 @@
         measurementId: "G-12TW5Q57JE"
     };
 
-    // 3. Inicialização
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const provider = new GoogleAuthProvider();
 
-    // 4. Função de Login (Exposta para o HTML via window)
     window.loginComGoogle = function() {
-        const btn = document.getElementById('btnLogin');
-        const btnText = document.getElementById('btnText');
-        
-        if (btn) btn.disabled = true;
-        if (btnText) btnText.innerText = "Redirecionando...";
-        
         signInWithRedirect(auth, provider);
     };
 
-    // 5. Captura o resultado após o redirecionamento
+    // 1. Captura o resultado do redirecionamento
     getRedirectResult(auth).then(async (result) => {
         if (result && result.user) {
-            const statusDiv = document.getElementById('status');
-            if (statusDiv) {
-                statusDiv.style.display = 'block';
-                statusDiv.innerText = "Validando acesso...";
-            }
+            console.log("Login capturado, enviando para o servidor Python...");
+            const idToken = await result.user.getIdToken();
             
-            try {
-                const idToken = await result.user.getIdToken();
-                
-                // ENVIA O TOKEN PARA O SEU BACKEND PYTHON
-                const response = await fetch("/auth/callback", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ token: idToken })
-                });
+            // ESSA PARTE É A MAIS IMPORTANTE
+            const response = await fetch("/auth/callback", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ token: idToken })
+            });
 
-                if (response.ok) {
-                    if (statusDiv) statusDiv.innerText = "Autorizado! Entrando...";
-                    window.location.replace("/perfil"); 
-                } else {
-                    const errorData = await response.json();
-                    alert("Acesso negado: " + (errorData.detail || "Usuário não autorizado."));
-                    await signOut(auth);
-                    window.location.reload();
-                }
-            } catch (err) {
-                console.error("Erro na comunicação com o servidor:", err);
-                alert("Erro de conexão com o servidor.");
-                resetBotao();
+            if (response.ok) {
+                console.log("Servidor Python criou a sessão!");
+                // Usa replace para não permitir que o usuário volte com o botão "Voltar"
+                window.location.replace("/perfil"); 
+            } else {
+                alert("Erro ao validar acesso no servidor.");
+                await signOut(auth);
             }
         }
-    }).catch((error) => {
-        console.error("Erro no Firebase Redirect:", error);
-        resetBotao();
-    });
+    }).catch(error => console.error("Erro no redirect:", error));
 
-    function resetBotao() {
-        const btn = document.getElementById('btnLogin');
-        const btnText = document.getElementById('btnText');
-        if (btn) btn.disabled = false;
-        if (btnText) btnText.innerText = "Entrar com Google";
-    }
-
-    // 6. Registro do Service Worker
-    if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-            navigator.serviceWorker.register('/sw.js').catch(err => console.log('Erro SW', err));
-        });
-    }
-
-    // 7. Observador de estado (Opcional, se você quiser pular a tela de login)
+    // 2. COMENTE OU REMOVA qualquer redirecionamento automático daqui!
     onAuthStateChanged(auth, (user) => {
         if (user) {
-            console.log("Usuário já autenticado:", user.email);
-            // Se você quiser que logue direto sem passar pelo backend, descomente a linha abaixo:
-            // window.location.href = "admin.html"; 
+            console.log("Firebase diz: Logado como " + user.email);
+            // NÃO COLOQUE window.location AQUI!
+            // Deixe o fetch do getRedirectResult cuidar disso.
         }
     });
 </script>
