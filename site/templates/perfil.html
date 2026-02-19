@@ -9,24 +9,22 @@
         body { font-family: 'Segoe UI', sans-serif; padding: 20px; background-color: #f4f7f6; display: flex; justify-content: center; }
         .container { max-width: 400px; width: 100%; background: white; padding: 30px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); text-align: center; }
         
-        /* Estilo da Foto de Perfil */
-        .profile-pic-container { position: relative; width: 120px; height: 120px; margin: 0 auto 20px; }
+        /* Foto de Perfil */
+        .profile-pic-container { position: relative; width: 120px; height: 120px; margin: 0 auto 10px; }
         #profileDisplay { 
             width: 120px; height: 120px; border-radius: 50%; object-fit: cover; 
-            border: 3px solid #1abc9c; background: #eee; display: block;
+            border: 3px solid #1abc9c; background: #eee;
         }
         .upload-btn { 
-            position: absolute; bottom: 0; right: 0; background: #1abc9c; color: white; 
-            width: 35px; height: 35px; border-radius: 50%; display: flex; align-items: center; 
+            position: absolute; bottom: 5px; right: 5px; background: #1abc9c; color: white; 
+            width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; 
             justify-content: center; cursor: pointer; border: 2px solid white;
         }
 
         label { display: block; text-align: left; font-weight: bold; margin-top: 15px; color: #34495e; font-size: 14px; }
         input, textarea { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 15px; }
         
-        .btn-save { background-color: #1abc9c; color: white; border: none; padding: 15px; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: bold; width: 100%; margin-top: 20px; transition: 0.3s; }
-        .btn-save:hover { background-color: #16a085; }
-
+        .btn-save { background-color: #1abc9c; color: white; border: none; padding: 15px; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: bold; width: 100%; margin-top: 20px; }
         .btn-logout { background: none; border: none; color: #e74c3c; cursor: pointer; font-size: 14px; font-weight: bold; margin-top: 20px; display: inline-flex; align-items: center; gap: 5px; }
         
         #fileInput { display: none; }
@@ -36,17 +34,15 @@
 
 <div class="container">
     <div class="profile-pic-container">
-        <img src="https://via.placeholder.com/120?text=Foto" id="profileDisplay" alt="Foto de Perfil">
-        <label for="fileInput" class="upload-btn">
-            <i class="fas fa-camera"></i>
-        </label>
+        <img src="https://via.placeholder.com/120?text=Foto" id="profileDisplay">
+        <label for="fileInput" class="upload-btn"><i class="fas fa-camera"></i></label>
         <input type="file" id="fileInput" accept="image/*">
     </div>
 
-    <h2>Meu Perfil</h2>
-    <p>Olá! Mantenha seus dados atualizados.</p>
-
     <form id="perfilForm">
+        <label>Seu Nome Completo:</label>
+        <input type="text" id="nome" placeholder="Digite seu nome" required>
+
         <label>Peso (kg):</label>
         <input type="number" id="peso" step="0.1" placeholder="Ex: 75.5" required>
 
@@ -56,7 +52,7 @@
         <label>Qualidades Profissionais:</label>
         <textarea id="qualidades" rows="4" placeholder="Sua experiência..." required></textarea>
 
-        <button type="submit" class="btn-save">Salvar Alterações</button>
+        <button type="submit" class="btn-save" id="btnSalvar">Salvar Alterações</button>
     </form>
 
     <button class="btn-logout" onclick="fazerLogout()">
@@ -76,24 +72,26 @@
     const profileDisplay = document.getElementById('profileDisplay');
     let fotoBase64 = "";
 
-    // Prévia da imagem ao selecionar
     fileInput.addEventListener('change', function() {
         const file = this.files[0];
         if (file) {
             const reader = new FileReader();
             reader.onload = function(e) {
                 profileDisplay.src = e.target.result;
-                fotoBase64 = e.target.result; // Salva a imagem como texto
+                fotoBase64 = e.target.result;
             }
             reader.readAsDataURL(file);
         }
     });
 
-    // Enviar formulário para o Python
     document.getElementById('perfilForm').addEventListener('submit', async (e) => {
         e.preventDefault();
-        
+        const btn = document.getElementById('btnSalvar');
+        btn.innerText = "Salvando...";
+        btn.disabled = true;
+
         const dados = {
+            nome: document.getElementById('nome').value,
             peso: document.getElementById('peso').value,
             altura: document.getElementById('altura').value,
             qualidades: document.getElementById('qualidades').value,
@@ -108,16 +106,19 @@
             });
 
             if (response.ok) {
-                alert("Perfil atualizado com sucesso!");
+                alert("✅ Perfil atualizado!");
             } else {
-                alert("Erro ao salvar perfil.");
+                const erro = await response.json();
+                alert("❌ Erro: " + (erro.detail || "Falha ao salvar"));
             }
         } catch (err) {
-            alert("Erro de conexão.");
+            alert("❌ Erro de conexão com o servidor.");
+        } finally {
+            btn.innerText = "Salvar Alterações";
+            btn.disabled = false;
         }
     });
 
-    // Função de Logout
     window.fazerLogout = async function() {
         if (!confirm("Deseja sair?")) return;
         await signOut(auth);
@@ -125,6 +126,5 @@
         window.location.href = "/entrar";
     }
 </script>
-
 </body>
 </html>
