@@ -167,8 +167,9 @@ async def pagina_perfil(request: Request):
     
     return templates.TemplateResponse("perfil.html", {"request": request, "email": user})
 
-app.mount("/static", StaticFiles(directory="site/static"), name="static")
-
+current_dir = os.path.dirname(os.path.realpath(__file__))
+static_dir = os.path.join(current_dir, "static")
+app.mount("/static", StaticFiles(directory=static_dir), name="static")
 # =============================
 # CONFIGURAÇÃO
 # =============================
@@ -748,6 +749,7 @@ async def resultados_publicos(request: Request):
     </body>
     </html>
     """
+
 
 
 
