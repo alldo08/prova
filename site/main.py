@@ -162,13 +162,17 @@ async def pagina_gestao_acessos(request: Request):
 
     return templates.TemplateResponse("gestao_acessos.html", {"request": request, "usuarios": usuarios})
 
-@app.get("/perfil")
-async def pagina_perfil(request: Request):
-    user = usuario_logado(request)
-    if not user:
-        return RedirectResponse(url="/entrar?erro=faca_login")
+#@app.get("/perfil")
+#async def pagina_perfil(request: Request):
+    # Pega o cookie sem disparar erro automático
+    #user = request.cookies.get("session_user")
     
-    return templates.TemplateResponse("perfil.html", {"request": request, "email": user})
+   # if not user:
+        # Só redireciona se REALMENTE não houver cookie
+        # Usamos o status 303 para garantir que o navegador entenda a mudança
+      #  return RedirectResponse(url="/entrar", status_code=303)
+    
+  #  return templates.TemplateResponse("perfil.html", {"request": request, "email": user})})
 
 current_dir = os.path.dirname(os.path.realpath(__file__))
 static_dir = os.path.join(current_dir, "static")
@@ -277,9 +281,12 @@ def startup():
         print("Erro no startup:", e)
 
 # 1. Rota para mostrar a página de perfil
-@app.get("/perfil", response_class=HTMLResponse)
+@app.get("/perfil")
 async def mostrar_perfil(request: Request):
-    return templates.TemplateResponse("perfil.html", {"request": request})
+    user = request.cookies.get("session_user")
+    if not user:
+        return RedirectResponse(url="/entrar")
+    return templates.TemplateResponse("perfil.html", {"request": request, "email": user})
 
 # 2. Rota que recebe os dados do botão "Salvar"
 @app.post("/atualizar-perfil")
@@ -299,11 +306,11 @@ async def processar_perfil(
 
 
 
-@app.middleware("http")
-async def add_no_cache_headers(request: Request, call_next):
-    response = await call_next(request)
-    response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
-    return response
+#@app.middleware("http")
+#async def add_no_cache_headers(request: Request, call_next):
+    #response = await call_next(request)
+    #response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+   # return response
 
 # =============================
 # PERGUNTAS (Base de Dados)
@@ -750,6 +757,7 @@ async def resultados_publicos(request: Request):
     </body>
     </html>
     """
+
 
 
 
