@@ -31,48 +31,58 @@
     </button>
     <div id="status">Verificando autorização...</div>
 </div>
+<script type="module">
+    // 1. Importações necessárias da versão 9+
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+    import { 
+        getAuth, 
+        GoogleAuthProvider, 
+        signInWithRedirect, 
+        getRedirectResult,
+        onAuthStateChanged,
+        signOut 
+    } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
 
-<script>
-    // Configuração do seu Firebase
+    // 2. Configuração do seu Firebase
     const firebaseConfig = {
-        apiKey: "AIzaSyCGkSCkznXVBanRx5gDgeVSRS2mJU90UT8",
-        authDomain: "projeto-web-app-16adb.firebaseapp.com", // Use .firebaseapp.com
+        apiKey: "AcbXX3KgvqD7B8Y4WjCu6yNx1Prfu5cNHz",
+        authDomain: "projeto-web-app-16adb.firebaseapp.com",
         projectId: "projeto-web-app-16adb",
         storageBucket: "projeto-web-app-16adb.firebasestorage.app",
         messagingSenderId: "1011089630045",
         appId: "1:1011089630045:web:3afc16a9817f11409c7eb4",
         measurementId: "G-12TW5Q57JE"
     };
-    // Inicializa Firebase
-    if (!firebase.apps.length) {
-        firebase.initializeApp(firebaseConfig);
-    }
-    
-    const auth = firebase.auth();
-    const provider = new firebase.auth.GoogleAuthProvider();
 
-    // Função disparada pelo botão
-    function loginComGoogle() {
+    // 3. Inicialização
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const provider = new GoogleAuthProvider();
+
+    // 4. Função de Login (Exposta para o HTML via window)
+    window.loginComGoogle = function() {
         const btn = document.getElementById('btnLogin');
         const btnText = document.getElementById('btnText');
         
-        btn.disabled = true;
-        btnText.innerText = "Redirecionando...";
+        if (btn) btn.disabled = true;
+        if (btnText) btnText.innerText = "Redirecionando...";
         
-        // Inicia o fluxo de redirecionamento do Google
-        auth.signInWithRedirect(provider);
-    }
-    
-    // Captura o resultado após o redirecionamento (quando o usuário volta para a página)
-    auth.getRedirectResult().then(async (result) => {
-        if (result.user) {
+        signInWithRedirect(auth, provider);
+    };
+
+    // 5. Captura o resultado após o redirecionamento
+    getRedirectResult(auth).then(async (result) => {
+        if (result && result.user) {
             const statusDiv = document.getElementById('status');
-            statusDiv.style.display = 'block';
+            if (statusDiv) {
+                statusDiv.style.display = 'block';
+                statusDiv.innerText = "Validando acesso...";
+            }
             
-            const idToken = await result.user.getIdToken();
-            
-            // ENVIA O TOKEN PARA O BACKEND PYTHON CRIAR O COOKIE
             try {
+                const idToken = await result.user.getIdToken();
+                
+                // ENVIA O TOKEN PARA O SEU BACKEND PYTHON
                 const response = await fetch("/auth/callback", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
@@ -80,49 +90,45 @@
                 });
 
                 if (response.ok) {
-                    // COOKIE CRIADO COM SUCESSO NO PYTHON
-                    statusDiv.innerText = "Autorizado! Entrando...";
+                    if (statusDiv) statusDiv.innerText = "Autorizado! Entrando...";
                     window.location.replace("/perfil"); 
                 } else {
                     const errorData = await response.json();
-                    alert("Acesso negado: " + (errorData.detail || "Usuário não autorizado no banco."));
-                    await auth.signOut();
+                    alert("Acesso negado: " + (errorData.detail || "Usuário não autorizado."));
+                    await signOut(auth);
                     window.location.reload();
                 }
             } catch (err) {
                 console.error("Erro na comunicação com o servidor:", err);
                 alert("Erro de conexão com o servidor.");
-                document.getElementById('btnLogin').disabled = false;
+                resetBotao();
             }
         }
     }).catch((error) => {
         console.error("Erro no Firebase Redirect:", error);
-        document.getElementById('btnLogin').disabled = false;
-        document.getElementById('btnText').innerText = "Entrar com Google";
+        resetBotao();
     });
 
-    // Registro do Service Worker (PWA)
+    function resetBotao() {
+        const btn = document.getElementById('btnLogin');
+        const btnText = document.getElementById('btnText');
+        if (btn) btn.disabled = false;
+        if (btnText) btnText.innerText = "Entrar com Google";
+    }
+
+    // 6. Registro do Service Worker
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
             navigator.serviceWorker.register('/sw.js').catch(err => console.log('Erro SW', err));
         });
     }
 
-    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
-
-    const auth = getAuth();
-    
-    // Este código vigia se o usuário logou
+    // 7. Observador de estado (Opcional, se você quiser pular a tela de login)
     onAuthStateChanged(auth, (user) => {
         if (user) {
-            // Usuário está logado! 
-            console.log("Usuário logado:", user.displayName);
-            
-            // REDIRECIONE PARA SUA PÁGINA PRINCIPAL AQUI
-            window.location.href = "admin.html"; 
-        } else {
-            // Usuário não está logado, permanece na página de entrar
-            console.log("Nenhum usuário logado.");
+            console.log("Usuário já autenticado:", user.email);
+            // Se você quiser que logue direto sem passar pelo backend, descomente a linha abaixo:
+            // window.location.href = "admin.html"; 
         }
     });
 </script>
