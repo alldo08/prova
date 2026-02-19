@@ -20,6 +20,7 @@ from fastapi.staticfiles import StaticFiles
 from firebase_admin import auth, credentials, firestore
 from pydantic import BaseModel
 import base64
+from starlette.middleware.sessions import SessionMiddleware # <--- Adicione esta linha
 # 1. Tenta pegar o conteúdo da variável de ambiente que você criou no Render
 # Tenta o caminho padrão de segredos do Render primeiro
 # Se não encontrar, tenta na raiz do projeto
@@ -63,6 +64,7 @@ else:
 db = firestore.client()
 # Isso diz: "Tudo que começar com /static, procure na pasta física chamada static"
 app = FastAPI()
+app.add_middleware(SessionMiddleware, secret_key="uma-chave-muito-secret1212a")
 templates = Jinja2Templates(directory="templates")
 
 # 1. Tenta o caminho relativo ao arquivo main.py
@@ -811,6 +813,7 @@ async def resultados_publicos(request: Request):
     </body>
     </html>
     """
+
 
 
 
