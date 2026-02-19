@@ -96,42 +96,32 @@ async def login_page(request: Request):
 
 #Auth#
 @app.post("/auth/callback")
-async def auth_callback(body: TokenBody, response: Response):
+async def auth_callback(body: TokenBody): # Removi o Response do parâmetro para usar o objeto direto
     try:
-        # 1. Decodifica o token enviado pelo frontend
         decoded_token = auth.verify_id_token(body.token)
-        email = decoded_token.get('email')
-        
-        # 2. Conecta ao Firestore para verificar o e-mail
+        email = decoded_token.get('email').lower().strip()
+
+        # Verificação no Firestore
         db = firestore.client()
-        doc_ref = db.collection("permissoes").document(email).get()
+        doc = db.collection("permissoes").document(email).get()
         
-        # 3. Verifica se o e-mail existe na coleção "permissoes"
-        if not doc_ref.exists:
-            print(f"🚫 Tentativa de acesso negada: {email}")
-            raise HTTPException(status_code=403, detail="E-mail não autorizado no banco de dados.")
-
-        # Opcional: Verificar se o usuário está 'ativo' dentro do documento
-        # dados = doc_ref.to_dict()
-        # if not dados.get("ativo"): raise ...
-
-        print(f"✅ Acesso liberado via DB: {email}")
-        print(f"DEBUG: O e-mail logado é: '{email}'")
-        # Cria o cookie de sessão para as próximas páginas
-        response.set_cookie(
-            key="session_user", 
-            value=email, 
-            httponly=True, 
-            max_age=3600 * 24 # 24 horas de duração
-        )
-        
-        return {"status": "success"}
-        
-    except Exception as e:
-        print(f"❌ Erro na autenticação: {e}")
-        if "403" in str(e):
+        if not doc.exists:
             raise HTTPException(status_code=403, detail="E-mail não autorizado.")
-        raise HTTPException(status_code=401, detail="Token inválido.")
+
+        # CRIANDO A RESPOSTA COM O COOKIE EXPLÍCITO
+        response = JSONResponse(content={"status": "success"})
+        response.set_cookie(
+            key="session_user",
+            value=email,
+            httponly=True,
+            secure=True,  # Importante para o Render (HTTPS)
+            samesite="lax",
+            max_age=86400 # 1 dia
+        )
+        return response
+
+    except Exception as e:
+        raise HTTPException(status_code=401, detail=str(e))
 
 #logout#
 @app.get("/logout")
@@ -757,6 +747,7 @@ async def resultados_publicos(request: Request):
     </body>
     </html>
     """
+
 
 
 
