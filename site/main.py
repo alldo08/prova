@@ -97,11 +97,10 @@ async def pagina_perfil(request: Request):
     
     return templates.TemplateResponse("perfil.html", {"request": request, "email": user})
 #logout#
-@app.get("/logout")
+@app.get("/logout") # Certifique-se de que não há espaços extras aqui
 async def logout(response: Response):
-    # Isso remove o cookie de sessão do navegador
     response.delete_cookie("session_user")
-    return RedirectResponse(url="/entrar")
+    return RedirectResponse(url="/entrar", status_code=303)
 #Auth#
 @app.post("/auth/callback")
 async def auth_callback(body: TokenBody, response: Response):
@@ -738,6 +737,7 @@ async def resultados_publicos(request: Request):
     </body>
     </html>
     """
+
 
 
 
