@@ -15,6 +15,8 @@
         p { color: #7f8c8d; margin-bottom: 2rem; }
         .btn-google { background: white; color: #555; border: 1px solid #ddd; padding: 12px 20px; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; width: 100%; gap: 12px; transition: all 0.3s ease; }
         .btn-google:hover { background: #f8f9fa; border-color: #bbb; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .btn-google:disabled { background: #eee; cursor: not-allowed; opacity: 0.7; }
+        #status { margin-top: 1rem; font-size: 14px; color: #3498db; display: none; }
     </style>
 </head>
 <body>
@@ -24,66 +26,69 @@
     <p>Acesse o portal do colaborador</p>
     <button class="btn-google" id="btnLogin" onclick="loginComGoogle()">
         <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" width="20" alt="Google">
-        Entrar com Google
+        <span id="btnText">Entrar com Google</span>
     </button>
+    <div id="status">Verificando autorização...</div>
 </div>
 
 <script>
-    // IMPORTANTE: Verifique se esta API Key é a que começa com "AIza..." 
-    // encontrada em: Console Firebase > Configurações do Projeto
     const firebaseConfig = {
-      apiKey: "AIzaSyCGkSCkznXVBanRx5gDgeVSRS2mJU90UT8",
-          authDomain: "projeto-web-app-16adb.firebaseapp.com",
-          projectId: "projeto-web-app-16adb",
-          storageBucket: "projeto-web-app-16adb.firebasestorage.app",
-          messagingSenderId: "1011089630045",
-          appId: "1:1011089630045:web:3afc16a9817f11409c7eb4",
-          measurementId: "G-12TW5Q57JE"
-        };
+        apiKey: "AcbXX3KgvqD7B8Y4WjCu6yNx1Prfu5cNHz",
+        authDomain: "projeto-web-app-16adb.firebaseapp.com",
+        projectId: "projeto-web-app-16adb",
+        storageBucket: "projeto-web-app-16adb.firebasestorage.app",
+        messagingSenderId: "1011089630045",
+        appId: "1:1011089630045:web:3afc16a9817f11409c7eb4",
+        measurementId: "G-12TW5Q57JE"
+    };
 
     firebase.initializeApp(firebaseConfig);
-    const provider = new firebase.auth.GoogleAuthProvider();
+    const auth = firebase.auth();
 
     function loginComGoogle() {
+        const btn = document.getElementById('btnLogin');
+        btn.disabled = true;
+        document.getElementById('btnText').innerText = "Conectando...";
+        
         const provider = new firebase.auth.GoogleAuthProvider();
-        // Em vez de popup, usamos redirect para evitar bloqueio do navegador
-        firebase.auth().signInWithRedirect(provider);
+        auth.signInWithRedirect(provider);
     }
     
-    // E adicione este observador para processar o resultado após o redirect
-    firebase.auth().getRedirectResult().then(async (result) => {
+    // Processa o retorno do Google
+    auth.getRedirectResult().then(async (result) => {
         if (result.user) {
+            document.getElementById('status').style.display = 'block';
             const idToken = await result.user.getIdToken();
+            
+            // ENVIA PARA O BACKEND PYTHON
             const response = await fetch("/auth/callback", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ token: idToken })
             });
-    
+
             if (response.ok) {
-                window.location.href = "/perfil";
+                // SUCESSO: O Python criou o cookie, agora podemos ir para o perfil
+                window.location.replace("/perfil"); 
             } else {
                 const errorData = await response.json();
-                alert("Acesso negado: " + errorData.detail);
-                await firebase.auth().signOut();
+                alert("Acesso negado: " + (errorData.detail || "Usuário não autorizado"));
+                await auth.signOut();
+                location.reload();
             }
         }
     }).catch((error) => {
-        console.error("Erro no redirect:", error);
+        console.error("Erro no login:", error);
+        document.getElementById('btnLogin').disabled = false;
+        document.getElementById('btnText').innerText = "Entrar com Google";
     });
 
-    // Registro do Service Worker para o PWA funcionar
+    // Service Worker
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-            navigator.serviceWorker.register('/sw.js')
-                .then(reg => console.log('SW registrado!', reg))
-                .catch(err => console.err('Erro SW', err));
+            navigator.serviceWorker.register('/sw.js').catch(err => console.log('Erro SW', err));
         });
     }
-
-    firebase.auth().onAuthStateChanged((user) => {
-        if (user) { window.location.href = "/perfil"; }
-    });
 </script>
 </body>
 </html>
