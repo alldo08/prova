@@ -44,33 +44,33 @@
     firebase.initializeApp(firebaseConfig);
     const provider = new firebase.auth.GoogleAuthProvider();
 
-    async function loginComGoogle() {
-        const btn = document.getElementById('btnLogin');
-        btn.disabled = true;
-        btn.innerText = "Carregando...";
-
-        try {
-            const result = await firebase.auth().signInWithPopup(provider);
+    function loginComGoogle() {
+        const provider = new firebase.auth.GoogleAuthProvider();
+        // Em vez de popup, usamos redirect para evitar bloqueio do navegador
+        firebase.auth().signInWithRedirect(provider);
+    }
+    
+    // E adicione este observador para processar o resultado após o redirect
+    firebase.auth().getRedirectResult().then(async (result) => {
+        if (result.user) {
             const idToken = await result.user.getIdToken();
-
             const response = await fetch("/auth/callback", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ token: idToken })
             });
-
+    
             if (response.ok) {
                 window.location.href = "/perfil";
             } else {
-                throw new Error("Erro na validação do servidor.");
+                const errorData = await response.json();
+                alert("Acesso negado: " + errorData.detail);
+                await firebase.auth().signOut();
             }
-        } catch (error) {
-            console.error("Erro detalhado:", error);
-            alert("Erro: " + error.message);
-            btn.disabled = false;
-            btn.innerHTML = `<img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" width="20"> Entrar com Google`;
         }
-    }
+    }).catch((error) => {
+        console.error("Erro no redirect:", error);
+    });
 
     // Registro do Service Worker para o PWA funcionar
     if ('serviceWorker' in navigator) {
