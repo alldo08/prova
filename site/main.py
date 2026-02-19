@@ -176,7 +176,18 @@ async def pagina_gestao_acessos(request: Request):
 current_dir = os.path.dirname(os.path.realpath(__file__))
 static_dir = os.path.join(current_dir, "static")
 app.mount("/static", StaticFiles(directory=static_dir), name="static")
+
+
+
 # =============================
+@app.post("/admin/adicionar") # Verifique se o nome está idêntico
+async def adicionar_email(request: Request):
+    data = await request.json()
+    email = data.get("email")
+    # ... sua lógica para salvar no banco de dados ...
+    return {"status": "success"}
+
+
 # CONFIGURAÇÃO
 # =============================
 
@@ -756,6 +767,7 @@ async def resultados_publicos(request: Request):
     </body>
     </html>
     """
+
 
 
 
