@@ -325,31 +325,29 @@ async def mostrar_perfil(request: Request):
         return RedirectResponse(url="/entrar")
     return templates.TemplateResponse("perfil.html", {"request": request, "email": user})
 
-# 2. Rota que recebe os dados do botão "Salvar"
+# Rota para buscar os dados do banco e mandar para o HTML
+@app.get("/obter-perfil")
+async def obter_perfil(request: Request):
+    user_email = request.session.get("user_email")
+    if not user_email:
+        return {"status": "error"}, 401
+    
+    doc = db.collection("usuarios_perfil").document(user_email).get()
+    if doc.exists:
+        return doc.to_dict()
+    return {}
+
+# Rota de salvar (garanta que o db.collection seja o mesmo nome acima)
 @app.post("/atualizar-perfil")
 async def atualizar_perfil(request: Request):
+    user_email = request.session.get("user_email")
+    if not user_email:
+        return {"status": "error", "detail": "Sessão expirada"}, 401
     try:
-        # Pega o email da sessão (certifique-se que o usuário está logado)
-        user_email = request.session.get("user_email")
-        if not user_email:
-            return {"status": "error", "detail": "Sessão expirada"}, 401
-
         data = await request.json()
-        
-        # SALVAMENTO NO FIRESTORE
-        # Se 'db' não estiver definido no topo do arquivo, vai dar erro 500
-        db.collection("usuarios_perfil").document(user_email).set({
-            "nome": data.get("nome"),
-            "peso": data.get("peso"),
-            "altura": data.get("altura"),
-            "qualidades": data.get("qualidades"),
-            "foto": data.get("foto"), # O Base64 da imagem
-            "email": user_email
-        }, merge=True)
-
+        db.collection("usuarios_perfil").document(user_email).set(data, merge=True)
         return {"status": "success"}
     except Exception as e:
-        print(f"ERRO NO SERVIDOR: {str(e)}") # Isso vai aparecer no LOG do Render
         return {"status": "error", "detail": str(e)}, 500
 
 
@@ -805,6 +803,7 @@ async def resultados_publicos(request: Request):
     </body>
     </html>
     """
+
 
 
 
