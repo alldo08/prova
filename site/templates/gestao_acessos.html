@@ -49,6 +49,7 @@
             display: flex;
             gap: 8px;
             margin-bottom: 25px;
+            margin-top: 20px;
         }
 
         input[type="email"] {
@@ -76,8 +77,6 @@
             transition: opacity 0.2s;
         }
 
-        .btn-add:active { opacity: 0.7; }
-
         .user-list {
             border-top: 1px solid #eee;
             margin-top: 10px;
@@ -89,11 +88,6 @@
             align-items: center;
             padding: 15px 0;
             border-bottom: 1px solid #f1f1f1;
-        }
-
-        .user-info {
-            display: flex;
-            flex-direction: column;
         }
 
         .user-email {
@@ -113,14 +107,32 @@
             transition: all 0.2s;
         }
 
-        .btn-remove:hover {
-            background: #fce8e6;
+        .btn-remove:hover { background: #fce8e6; }
+
+        .btn-logout {
+            background: none;
+            border: none;
+            color: var(--danger);
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            padding: 10px;
+            border-radius: 8px;
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: background 0.2s;
+            margin-top: 10px;
         }
+
+        .btn-logout:hover { background: #fff5f5; }
 
         .back-link {
             display: block;
             text-align: center;
-            margin-top: 25px;
+            margin-top: 15px;
             color: var(--primary);
             text-decoration: none;
             font-size: 14px;
@@ -147,9 +159,7 @@
     <div class="user-list">
         {% for user in usuarios %}
         <div class="user-item">
-            <div class="user-info">
-                <span class="user-email">{{ user.email }}</span>
-            </div>
+            <span class="user-email">{{ user.email }}</span>
             <button class="btn-remove" onclick="remover('{{ user.email }}')">
                 <i class="fas fa-trash-can"></i>
             </button>
@@ -157,13 +167,31 @@
         {% endfor %}
     </div>
 
+    <button class="btn-logout" onclick="fazerLogout()">
+        <i class="fas fa-sign-out-alt"></i> Sair da Conta
+    </button>
+    
     <a href="/admin" class="back-link">
-        <i class="fas fa-arrow-left"></i> Voltar ao Painel Principal
+        <i class="fas fa-arrow-left"></i> Voltar ao Painel
     </a>
 </div>
 
-<script>
-    async function adicionar() {
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+    import { getAuth, signOut } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
+
+    // Apenas inicialize se precisar usar auth no front para o logout
+    const firebaseConfig = {
+        apiKey: "AcbXX3KgvqD7B8Y4WjCu6yNx1Prfu5cNHz",
+        authDomain: "projeto-web-app-16adb.firebaseapp.com",
+        projectId: "projeto-web-app-16adb"
+    };
+    
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+
+    // FUNÇÃO ADICIONAR
+    window.adicionar = async function() {
         const email = document.getElementById('emailInput').value.trim().toLowerCase();
         if (!email) return alert("Digite um e-mail válido.");
 
@@ -174,17 +202,13 @@
                 body: JSON.stringify({ email: email })
             });
 
-            if (response.ok) {
-                location.reload();
-            } else {
-                alert("Erro ao adicionar e-mail.");
-            }
-        } catch (err) {
-            alert("Erro de conexão.");
-        }
+            if (response.ok) location.reload();
+            else alert("Erro ao adicionar e-mail.");
+        } catch (err) { alert("Erro de conexão."); }
     }
 
-    async function remover(email) {
+    // FUNÇÃO REMOVER
+    window.remover = async function(email) {
         if (!confirm(`Deseja remover o acesso de ${email}?`)) return;
 
         try {
@@ -194,13 +218,27 @@
                 body: JSON.stringify({ email: email })
             });
 
-            if (response.ok) {
-                location.reload();
-            } else {
-                alert("Erro ao remover e-mail.");
-            }
-        } catch (err) {
-            alert("Erro de conexão.");
+            if (response.ok) location.reload();
+            else alert("Erro ao remover e-mail.");
+        } catch (err) { alert("Erro de conexão."); }
+    }
+
+    // FUNÇÃO LOGOUT
+    window.fazerLogout = async function() {
+        if (!confirm("Deseja realmente sair do sistema?")) return;
+
+        try {
+            // 1. Desloga do Firebase (Front-end)
+            await signOut(auth);
+
+            // 2. Limpa a sessão no Python (Back-end)
+            await fetch('/logout', { method: 'POST' });
+
+            // 3. Vai para a tela de entrada
+            window.location.href = "/entrar";
+        } catch (error) {
+            console.error("Erro no logout:", error);
+            alert("Erro ao sair. Tente fechar o navegador.");
         }
     }
 </script>
