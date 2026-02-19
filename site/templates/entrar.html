@@ -107,6 +107,24 @@
             navigator.serviceWorker.register('/sw.js').catch(err => console.log('Erro SW', err));
         });
     }
+
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
+
+    const auth = getAuth();
+    
+    // Este código vigia se o usuário logou
+    onAuthStateChanged(auth, (user) => {
+        if (user) {
+            // Usuário está logado! 
+            console.log("Usuário logado:", user.displayName);
+            
+            // REDIRECIONE PARA SUA PÁGINA PRINCIPAL AQUI
+            window.location.href = "index.html"; 
+        } else {
+            // Usuário não está logado, permanece na página de entrar
+            console.log("Nenhum usuário logado.");
+        }
+    });
 </script>
 </body>
 </html>
