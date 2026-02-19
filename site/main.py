@@ -14,7 +14,7 @@ import psycopg2
 import psycopg2.extras
 import firebase_admin
 from fastapi import FastAPI, Request, HTTPException, Response, Form
-from fastapi.responses import HTMLResponse, RedirectResponse, FileResponse
+from fastapi.responses import HTMLResponse, RedirectResponse, FileResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 from firebase_admin import auth, credentials, firestore
@@ -96,33 +96,42 @@ async def login_page(request: Request):
 
 #Auth#
 @app.post("/auth/callback")
-async def auth_callback(body: TokenBody): # Removi o Response do parâmetro para usar o objeto direto
+async def auth_callback(body: TokenBody):
     try:
+        # 1. Verifica o token do Firebase
         decoded_token = auth.verify_id_token(body.token)
         email = decoded_token.get('email').lower().strip()
 
-        # Verificação no Firestore
+        # 2. Verificação no Firestore
         db = firestore.client()
         doc = db.collection("permissoes").document(email).get()
         
         if not doc.exists:
-            raise HTTPException(status_code=403, detail="E-mail não autorizado.")
+            print(f"🚫 Acesso negado para: {email}")
+            # Usamos HTTPException para o FastAPI interromper o fluxo aqui
+            raise HTTPException(status_code=403, detail="E-mail não autorizado no sistema.")
 
-        # CRIANDO A RESPOSTA COM O COOKIE EXPLÍCITO
-        response = JSONResponse(content={"status": "success"})
+        # 3. Se chegou aqui, o e-mail é válido. Criamos a resposta.
+        print(f"✅ Acesso liberado: {email}")
+        response = JSONResponse(content={"status": "success", "redirect": "/perfil"})
+        
+        # 4. Configuração do Cookie (Crucial para o Render/HTTPS)
         response.set_cookie(
             key="session_user",
             value=email,
-            httponly=True,
-            secure=True,  # Importante para o Render (HTTPS)
-            samesite="lax",
-            max_age=86400 # 1 dia
+            httponly=True,   # Impede acesso via JS (segurança)
+            secure=True,     # Exige HTTPS (necessário no Render)
+            samesite="lax",  # Permite navegação entre páginas do mesmo site
+            max_age=86400    # Expira em 24 horas
         )
         return response
 
+    except HTTPException as he:
+        # Re-lança o erro 403 se ele foi gerado acima
+        raise he
     except Exception as e:
-        raise HTTPException(status_code=401, detail=str(e))
-
+        print(f"❌ Erro de autenticação: {str(e)}")
+        raise HTTPException(status_code=401, detail="Token inválido ou expirado.")
 #logout#
 @app.get("/logout")
 async def logout(): # Remova o parâmetro response daqui se não for usar cookie manual
@@ -747,6 +756,7 @@ async def resultados_publicos(request: Request):
     </body>
     </html>
     """
+
 
 
 
