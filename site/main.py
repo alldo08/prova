@@ -328,28 +328,36 @@ async def mostrar_perfil(request: Request):
 # Rota para buscar os dados do banco e mandar para o HTML
 @app.get("/obter-perfil")
 async def obter_perfil(request: Request):
-    user_email = request.session.get("user_email")
-    if not user_email:
-        return {"status": "error"}, 401
-    
-    doc = db.collection("usuarios_perfil").document(user_email).get()
-    if doc.exists:
-        return doc.to_dict()
-    return {}
+    try:
+        user_email = request.session.get("user_email")
+        if not user_email:
+            return {"error": "nao_logado"}, 401
+            
+        doc_ref = db.collection("usuarios_perfil").document(user_email)
+        doc = doc_ref.get()
+        
+        if doc.exists:
+            return doc.to_dict()
+        return {} # Retorna vazio se não tiver perfil ainda
+    except Exception as e:
+        print(f"Erro no obter-perfil: {e}")
+        return {"detail": str(e)}, 500
 
-# Rota de salvar (garanta que o db.collection seja o mesmo nome acima)
 @app.post("/atualizar-perfil")
 async def atualizar_perfil(request: Request):
-    user_email = request.session.get("user_email")
-    if not user_email:
-        return {"status": "error", "detail": "Sessão expirada"}, 401
     try:
+        user_email = request.session.get("user_email")
+        if not user_email:
+            return {"error": "nao_logado"}, 401
+
         data = await request.json()
+        
+        # O Firestore pode falhar se o 'data' estiver vazio ou corrompido
         db.collection("usuarios_perfil").document(user_email).set(data, merge=True)
         return {"status": "success"}
     except Exception as e:
-        return {"status": "error", "detail": str(e)}, 500
-
+        print(f"Erro no atualizar-perfil: {e}")
+        return {"detail": str(e)}, 500
 
 
 #@app.middleware("http")
@@ -803,6 +811,7 @@ async def resultados_publicos(request: Request):
     </body>
     </html>
     """
+
 
 
 
