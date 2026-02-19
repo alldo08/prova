@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login - Santer Saúde</title>
+    
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
     
@@ -16,7 +17,7 @@
         .btn-google { background: white; color: #555; border: 1px solid #ddd; padding: 12px 20px; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; width: 100%; gap: 12px; transition: all 0.3s ease; }
         .btn-google:hover { background: #f8f9fa; border-color: #bbb; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
         .btn-google:disabled { background: #eee; cursor: not-allowed; opacity: 0.7; }
-        #status { margin-top: 1rem; font-size: 14px; color: #3498db; display: none; }
+        #status { margin-top: 1rem; font-size: 14px; color: #3498db; display: none; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -32,6 +33,7 @@
 </div>
 
 <script>
+    // Configuração do seu Firebase
     const firebaseConfig = {
         apiKey: "AcbXX3KgvqD7B8Y4WjCu6yNx1Prfu5cNHz",
         authDomain: "projeto-web-app-16adb.firebaseapp.com",
@@ -42,48 +44,65 @@
         measurementId: "G-12TW5Q57JE"
     };
 
-    firebase.initializeApp(firebaseConfig);
+    // Inicializa Firebase
+    if (!firebase.apps.length) {
+        firebase.initializeApp(firebaseConfig);
+    }
+    
     const auth = firebase.auth();
+    const provider = new firebase.auth.GoogleAuthProvider();
 
+    // Função disparada pelo botão
     function loginComGoogle() {
         const btn = document.getElementById('btnLogin');
-        btn.disabled = true;
-        document.getElementById('btnText').innerText = "Conectando...";
+        const btnText = document.getElementById('btnText');
         
-        const provider = new firebase.auth.GoogleAuthProvider();
+        btn.disabled = true;
+        btnText.innerText = "Redirecionando...";
+        
+        // Inicia o fluxo de redirecionamento do Google
         auth.signInWithRedirect(provider);
     }
     
-    // Processa o retorno do Google
+    // Captura o resultado após o redirecionamento (quando o usuário volta para a página)
     auth.getRedirectResult().then(async (result) => {
         if (result.user) {
-            document.getElementById('status').style.display = 'block';
+            const statusDiv = document.getElementById('status');
+            statusDiv.style.display = 'block';
+            
             const idToken = await result.user.getIdToken();
             
-            // ENVIA PARA O BACKEND PYTHON
-            const response = await fetch("/auth/callback", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ token: idToken })
-            });
+            // ENVIA O TOKEN PARA O BACKEND PYTHON CRIAR O COOKIE
+            try {
+                const response = await fetch("/auth/callback", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ token: idToken })
+                });
 
-            if (response.ok) {
-                // SUCESSO: O Python criou o cookie, agora podemos ir para o perfil
-                window.location.replace("/perfil"); 
-            } else {
-                const errorData = await response.json();
-                alert("Acesso negado: " + (errorData.detail || "Usuário não autorizado"));
-                await auth.signOut();
-                location.reload();
+                if (response.ok) {
+                    // COOKIE CRIADO COM SUCESSO NO PYTHON
+                    statusDiv.innerText = "Autorizado! Entrando...";
+                    window.location.replace("/perfil"); 
+                } else {
+                    const errorData = await response.json();
+                    alert("Acesso negado: " + (errorData.detail || "Usuário não autorizado no banco."));
+                    await auth.signOut();
+                    window.location.reload();
+                }
+            } catch (err) {
+                console.error("Erro na comunicação com o servidor:", err);
+                alert("Erro de conexão com o servidor.");
+                document.getElementById('btnLogin').disabled = false;
             }
         }
     }).catch((error) => {
-        console.error("Erro no login:", error);
+        console.error("Erro no Firebase Redirect:", error);
         document.getElementById('btnLogin').disabled = false;
         document.getElementById('btnText').innerText = "Entrar com Google";
     });
 
-    // Service Worker
+    // Registro do Service Worker (PWA)
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
             navigator.serviceWorker.register('/sw.js').catch(err => console.log('Erro SW', err));
