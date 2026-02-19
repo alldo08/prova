@@ -328,27 +328,28 @@ async def mostrar_perfil(request: Request):
 # 2. Rota que recebe os dados do botão "Salvar"
 @app.post("/atualizar-perfil")
 async def atualizar_perfil(request: Request):
-    user_email = request.session.get("user_email")
-    if not user_email:
-        return {"status": "error", "detail": "Sessão expirada. Logue novamente."}, 401
-
     try:
-        data = await request.json() # Captura os dados enviados pelo JavaScript
+        # Pega o email da sessão (certifique-se que o usuário está logado)
+        user_email = request.session.get("user_email")
+        if not user_email:
+            return {"status": "error", "detail": "Sessão expirada"}, 401
+
+        data = await request.json()
         
-        # Salva no Firestore
+        # SALVAMENTO NO FIRESTORE
+        # Se 'db' não estiver definido no topo do arquivo, vai dar erro 500
         db.collection("usuarios_perfil").document(user_email).set({
             "nome": data.get("nome"),
             "peso": data.get("peso"),
             "altura": data.get("altura"),
             "qualidades": data.get("qualidades"),
-            "foto": data.get("foto"), # Aqui vai a string da imagem
-            "email": user_email,
-            "atualizado_em": firestore.SERVER_TIMESTAMP
+            "foto": data.get("foto"), # O Base64 da imagem
+            "email": user_email
         }, merge=True)
 
         return {"status": "success"}
     except Exception as e:
-        print(f"Erro no servidor: {e}")
+        print(f"ERRO NO SERVIDOR: {str(e)}") # Isso vai aparecer no LOG do Render
         return {"status": "error", "detail": str(e)}, 500
 
 
@@ -804,6 +805,7 @@ async def resultados_publicos(request: Request):
     </body>
     </html>
     """
+
 
 
 
