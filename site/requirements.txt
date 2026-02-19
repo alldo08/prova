@@ -7,3 +7,4 @@ pytz
 httpx
 firebase_admin
 pydantic
+itsdangerous
