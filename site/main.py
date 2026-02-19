@@ -180,12 +180,25 @@ app.mount("/static", StaticFiles(directory=static_dir), name="static")
 
 
 # =============================
-@app.post("/admin/adicionar") # Verifique se o nome está idêntico
-async def adicionar_email(request: Request):
+db = firestore.client()
+
+@app.post("/admin/adicionar")
+async def adicionar_acesso(request: Request):
     data = await request.json()
-    email = data.get("email")
-    # ... sua lógica para salvar no banco de dados ...
-    return {"status": "success"}
+    email_novo = data.get("email")
+    
+    try:
+        # Tente salvar em uma coleção chamada 'usuarios_autorizados'
+        # IMPORTANTE: Se usar biblioteca assíncrona, use await
+        db.collection("usuarios_autorizados").document(email_novo).set({
+            "email": email_novo,
+            "data_adicao": firestore.SERVER_TIMESTAMP
+        })
+        print(f"Sucesso: {email_novo} adicionado!")
+        return {"status": "success"}
+    except Exception as e:
+        print(f"Erro ao salvar no banco: {e}")
+        return {"status": "error", "detail": str(e)}, 500
 
 
 # CONFIGURAÇÃO
@@ -767,6 +780,7 @@ async def resultados_publicos(request: Request):
     </body>
     </html>
     """
+
 
 
 
