@@ -86,9 +86,12 @@
                     profileDisplay.src = dados.foto;
                     fotoBase64 = dados.foto;
                 }
+            } else {
+                const erro = await response.json();
+                console.error("Erro ao carregar dados:", erro.detail);
             }
         } catch (err) {
-            console.log("Perfil novo ou erro ao carregar dados existentes.");
+            console.log("Perfil novo ou erro de conexão.");
         }
     });
 
@@ -96,6 +99,12 @@
     fileInput.addEventListener('change', function() {
         const file = this.files[0];
         if (file) {
+            // Pequena trava de segurança para fotos gigantescas (evita erro 500 no Render)
+            if (file.size > 2 * 1024 * 1024) {
+                alert("A imagem é muito grande! Escolha uma de até 2MB.");
+                this.value = "";
+                return;
+            }
             const reader = new FileReader();
             reader.onload = function(e) {
                 profileDisplay.src = e.target.result;
@@ -109,7 +118,7 @@
     document.getElementById('perfilForm').addEventListener('submit', async (e) => {
         e.preventDefault();
         const btn = document.getElementById('btnSalvar');
-        btn.innerText = "Enviando...";
+        btn.innerText = "Salvando...";
         btn.disabled = true;
 
         const dados = {
@@ -127,15 +136,14 @@
                 body: JSON.stringify(dados)
             });
 
-            const resultado = await response.json();
-
             if (response.ok) {
                 alert("✅ Perfil atualizado com sucesso!");
             } else {
-                alert("❌ Erro: " + (resultado.detail || "Falha ao salvar no servidor"));
+                const resultado = await response.json();
+                alert("❌ Erro do Servidor: " + (resultado.detail || "Erro desconhecido"));
             }
         } catch (err) {
-            alert("❌ Erro de conexão com o servidor.");
+            alert("❌ Erro de conexão com o servidor. Verifique os logs do Render.");
         } finally {
             btn.innerText = "Salvar Alterações";
             btn.disabled = false;
@@ -144,9 +152,13 @@
 
     window.fazerLogout = async function() {
         if (!confirm("Deseja sair?")) return;
-        await signOut(auth);
-        await fetch('/logout', { method: 'POST' });
-        window.location.href = "/entrar";
+        try {
+            await signOut(auth);
+            await fetch('/logout', { method: 'POST' });
+            window.location.href = "/entrar";
+        } catch (err) {
+            alert("Erro ao deslogar.");
+        }
     }
 </script>
 </body>
