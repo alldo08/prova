@@ -4,36 +4,127 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Meu Perfil - Santer</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        body { font-family: sans-serif; padding: 20px; background-color: #f4f7f6; }
-        .container { max-width: 400px; margin: auto; background: white; padding: 20px; border-radius: 10px; shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        input, textarea { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ddd; border-radius: 5px; box-sizing: border-box; }
-        button { width: 100%; background-color: #1abc9c; color: white; border: none; padding: 15px; border-radius: 5px; cursor: pointer; font-size: 16px; }
+        body { font-family: 'Segoe UI', sans-serif; padding: 20px; background-color: #f4f7f6; display: flex; justify-content: center; }
+        .container { max-width: 400px; width: 100%; background: white; padding: 30px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); text-align: center; }
+        
+        /* Estilo da Foto de Perfil */
+        .profile-pic-container { position: relative; width: 120px; height: 120px; margin: 0 auto 20px; }
+        #profileDisplay { 
+            width: 120px; height: 120px; border-radius: 50%; object-fit: cover; 
+            border: 3px solid #1abc9c; background: #eee; display: block;
+        }
+        .upload-btn { 
+            position: absolute; bottom: 0; right: 0; background: #1abc9c; color: white; 
+            width: 35px; height: 35px; border-radius: 50%; display: flex; align-items: center; 
+            justify-content: center; cursor: pointer; border: 2px solid white;
+        }
+
+        label { display: block; text-align: left; font-weight: bold; margin-top: 15px; color: #34495e; font-size: 14px; }
+        input, textarea { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 15px; }
+        
+        .btn-save { background-color: #1abc9c; color: white; border: none; padding: 15px; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: bold; width: 100%; margin-top: 20px; transition: 0.3s; }
+        .btn-save:hover { background-color: #16a085; }
+
+        .btn-logout { background: none; border: none; color: #e74c3c; cursor: pointer; font-size: 14px; font-weight: bold; margin-top: 20px; display: inline-flex; align-items: center; gap: 5px; }
+        
+        #fileInput { display: none; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h2>Complete seu Perfil</h2>
-    <p>Olá! Precisamos de mais alguns detalhes para as escalas.</p>
+    <div class="profile-pic-container">
+        <img src="https://via.placeholder.com/120?text=Foto" id="profileDisplay" alt="Foto de Perfil">
+        <label for="fileInput" class="upload-btn">
+            <i class="fas fa-camera"></i>
+        </label>
+        <input type="file" id="fileInput" accept="image/*">
+    </div>
 
-    <form action="/atualizar-perfil" method="POST">
-        
-        <label>Seu Peso (kg):</label>
-        <input type="number" name="peso" step="0.1" placeholder="Ex: 75.5" required>
+    <h2>Meu Perfil</h2>
+    <p>Olá! Mantenha seus dados atualizados.</p>
+
+    <form id="perfilForm">
+        <label>Peso (kg):</label>
+        <input type="number" id="peso" step="0.1" placeholder="Ex: 75.5" required>
+
+        <label>Altura (cm):</label>
+        <input type="number" id="altura" placeholder="Ex: 175" required>
 
         <label>Qualidades Profissionais:</label>
-        <textarea name="qualidades" rows="4" placeholder="Ex: Pontualidade, experiência em UTI, etc..." required></textarea>
+        <textarea id="qualidades" rows="4" placeholder="Sua experiência..." required></textarea>
 
-        <button type="submit">Salvar e Ver Plantões</button>
+        <button type="submit" class="btn-save">Salvar Alterações</button>
     </form>
+
+    <button class="btn-logout" onclick="fazerLogout()">
+        <i class="fas fa-sign-out-alt"></i> Sair da Conta
+    </button>
 </div>
 
-<script>
-    const urlParams = new URLSearchParams(window.location.search);
-    if (urlParams.get('erro') === 'privilegio') {
-        alert("⛔ Você não tem permissão para acessar a área de gestão.");
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+    import { getAuth, signOut } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
+
+    const firebaseConfig = { apiKey: "AcbXX3KgvqD7B8Y4WjCu6yNx1Prfu5cNHz", authDomain: "projeto-web-app-16adb.firebaseapp.com" };
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+
+    const fileInput = document.getElementById('fileInput');
+    const profileDisplay = document.getElementById('profileDisplay');
+    let fotoBase64 = "";
+
+    // Prévia da imagem ao selecionar
+    fileInput.addEventListener('change', function() {
+        const file = this.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                profileDisplay.src = e.target.result;
+                fotoBase64 = e.target.result; // Salva a imagem como texto
+            }
+            reader.readAsDataURL(file);
+        }
+    });
+
+    // Enviar formulário para o Python
+    document.getElementById('perfilForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const dados = {
+            peso: document.getElementById('peso').value,
+            altura: document.getElementById('altura').value,
+            qualidades: document.getElementById('qualidades').value,
+            foto: fotoBase64
+        };
+
+        try {
+            const response = await fetch('/atualizar-perfil', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(dados)
+            });
+
+            if (response.ok) {
+                alert("Perfil atualizado com sucesso!");
+            } else {
+                alert("Erro ao salvar perfil.");
+            }
+        } catch (err) {
+            alert("Erro de conexão.");
+        }
+    });
+
+    // Função de Logout
+    window.fazerLogout = async function() {
+        if (!confirm("Deseja sair?")) return;
+        await signOut(auth);
+        await fetch('/logout', { method: 'POST' });
+        window.location.href = "/entrar";
     }
 </script>
+
 </body>
 </html>
