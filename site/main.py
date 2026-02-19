@@ -12,15 +12,14 @@ import csv
 import io
 import psycopg2
 import psycopg2.extras
-from fastapi import FastAPI, Request, Form, HTTPException
-from fastapi.responses import HTMLResponse, RedirectResponse
+import firebase_admin
+from fastapi import FastAPI, Request, HTTPException, Response, Form
+from fastapi.responses import HTMLResponse, RedirectResponse, FileResponse
 from fastapi.templating import Jinja2Templates
-from fastapi.responses import StreamingResponse, FileResponse
-from fastapi import Form, Response
 from fastapi.staticfiles import StaticFiles
-from firebase_admin import auth, credentials
+from firebase_admin import auth, credentials, firestore
+from pydantic import BaseModel
 import base64
-from pydantic import BaseModel                 # <--- ESTA LINHA ESTÁ FALTANDO
 # 1. Tenta pegar o conteúdo da variável de ambiente que você criou no Render
 # Tenta o caminho padrão de segredos do Render primeiro
 # Se não encontrar, tenta na raiz do projeto
@@ -751,6 +750,7 @@ async def resultados_publicos(request: Request):
     </body>
     </html>
     """
+
 
 
 
