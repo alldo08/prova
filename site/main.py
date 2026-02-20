@@ -431,12 +431,14 @@ async def atualizar_perfil(
         conn.close()
 
         print(f"✅ SUCESSO: Perfil de {user_email} salvo com sucesso.")
-        return HTMLResponse("<script>alert('✅ Perfil atualizado com sucesso!'); window.location.href='/perfil';</script>")
-
-    except Exception as e:
-        print(f"❌ ERRO NO BANCO: {str(e)}")
-        # Em caso de erro, avisa o usuário sem deslogar
-        return HTMLResponse(f"<script>alert('Erro técnico ao salvar: {str(e)}'); window.history.back();</script>")
+        return HTMLResponse("""
+            <script>
+                alert('✅ Perfil salvo com sucesso!');
+                window.location.href = '/plantoes';
+            </script>
+        """)
+        except Exception as e:
+            return HTMLResponse(f"<script>alert('Erro: {str(e)}'); window.history.back();</script>")
 # =============================
 # PERGUNTAS (Base de Dados)
 # =============================
@@ -882,6 +884,7 @@ async def resultados_publicos(request: Request):
     </body>
     </html>
     """
+
 
 
 
