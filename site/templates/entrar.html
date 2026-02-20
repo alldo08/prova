@@ -34,14 +34,15 @@
     import { getAuth, GoogleAuthProvider, signInWithPopup, signOut } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
 
     const firebaseConfig = {
-        apiKey: "AcbXX3KgvqD7B8Y4WjCu6yNx1Prfu5cNHz",
+        apiKey: "AIIzaSyCGkSCkznXVBanRx5gDgeVSRS2mJU90UT8",
         authDomain: "projeto-web-app-16adb.firebaseapp.com",
+        databaseURL: "https://projeto-web-app-16adb-default-rtdb.firebaseio.com",
         projectId: "projeto-web-app-16adb",
         storageBucket: "projeto-web-app-16adb.firebasestorage.app",
         messagingSenderId: "1011089630045",
         appId: "1:1011089630045:web:3afc16a9817f11409c7eb4",
         measurementId: "G-12TW5Q57JE"
-    };
+        };
 
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
