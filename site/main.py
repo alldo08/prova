@@ -351,14 +351,20 @@ def startup():
         print("Erro no startup:", e)
 
 # 1. Rota para mostrar a página de perfil
-@app.get("/perfil")
-async def mostrar_perfil(request: Request):
-    user = request.cookies.get("session_user")
-    if not user:
-        return RedirectResponse(url="/entrar")
-    return templates.TemplateResponse("perfil.html", {"request": request, "email": user})
+@app.get("/perfil", response_class=HTMLResponse)
+async def pag_perfil(request: Request):
+    user_email = request.session.get("user_email")
+    print(f"DEBUG NAVEGAÇÃO: Tentando acessar /perfil. Email na sessão: {user_email}")
 
-# Rota para buscar os dados do banco e mandar para o HTML
+    if not user_email:
+        print("⚠️ Sessão vazia! Redirecionando para /entrar")
+        return RedirectResponse(url="/entrar")
+    
+    try:
+        with open("templates/perfil.html", "r", encoding="utf-8") as f:
+            return f.read()
+    except Exception as e:
+        return f"Erro ao carregar template: {e}"# Rota para buscar os dados do banco e mandar para o HTML
 @app.get("/obter-perfil")
 async def obter_perfil(request: Request):
     user_email = request.session.get("user_email")
@@ -875,6 +881,7 @@ async def resultados_publicos(request: Request):
     </body>
     </html>
     """
+
 
 
 
