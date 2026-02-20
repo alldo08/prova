@@ -87,7 +87,14 @@ if os.path.exists(static_path):
     app.mount("/static", StaticFiles(directory=static_path), name="static")
 else:
     print("❌ ERRO: Pasta static não encontrada em lugar nenhum!")
+####
 
+def get_db_connection():
+    db_url = os.environ.get('DATABASE_URL')
+    # Se a URL começar com postgres://, o SQLAlchemy/Psycopg2 às vezes exige postgresql://
+    if db_url and db_url.startswith("postgres://"):
+        db_url = db_url.replace("postgres://", "postgresql://", 1)
+    return psycopg2.connect(db_url)
 #auth#################
 
 class TokenBody(BaseModel):
@@ -868,6 +875,7 @@ async def resultados_publicos(request: Request):
     </body>
     </html>
     """
+
 
 
 
