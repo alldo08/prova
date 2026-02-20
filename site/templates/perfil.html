@@ -8,24 +8,13 @@
     <style>
         body { font-family: 'Segoe UI', sans-serif; padding: 20px; background-color: #f4f7f6; display: flex; justify-content: center; }
         .container { max-width: 400px; width: 100%; background: white; padding: 30px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); text-align: center; }
-        
         .profile-pic-container { position: relative; width: 120px; height: 120px; margin: 0 auto 10px; }
-        #profileDisplay { 
-            width: 120px; height: 120px; border-radius: 50%; object-fit: cover; 
-            border: 3px solid #1abc9c; background: #eee;
-        }
-        .upload-btn { 
-            position: absolute; bottom: 5px; right: 5px; background: #1abc9c; color: white; 
-            width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; 
-            justify-content: center; cursor: pointer; border: 2px solid white;
-        }
-
+        #profileDisplay { width: 120px; height: 120px; border-radius: 50%; object-fit: cover; border: 3px solid #1abc9c; background: #eee; }
+        .upload-btn { position: absolute; bottom: 5px; right: 5px; background: #1abc9c; color: white; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; border: 2px solid white; }
         label { display: block; text-align: left; font-weight: bold; margin-top: 15px; color: #34495e; font-size: 14px; }
         input, textarea { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 15px; }
-        
-        .btn-save { background-color: #1abc9c; color: white; border: none; padding: 15px; border-radius: 8px; cursor: pointer; font-size: 166px; font-weight: bold; width: 100%; margin-top: 20px; }
+        .btn-save { background-color: #1abc9c; color: white; border: none; padding: 15px; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: bold; width: 100%; margin-top: 20px; }
         .btn-logout { background: none; border: none; color: #e74c3c; cursor: pointer; font-size: 14px; font-weight: bold; margin-top: 20px; display: inline-flex; align-items: center; gap: 5px; }
-        
         #fileInput { display: none; }
     </style>
 </head>
@@ -71,15 +60,10 @@
     const profileDisplay = document.getElementById('profileDisplay');
     let fotoBase64 = "";
 
-    // 1. CARREGAR DADOS COM BYPASS DE CACHE
+    // 1. CARREGAR DADOS
     window.addEventListener('load', async () => {
         try {
-            // Adicionamos timestamp (?t=) para furar o cache do Service Worker
-            const response = await fetch('/obter-perfil?t=' + Date.now(), {
-                method: 'GET',
-                headers: { 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' }
-            });
-            
+            const response = await fetch('/obter-perfil?t=' + Date.now());
             if (response.ok) {
                 const dados = await response.json();
                 if (dados.nome) document.getElementById('nome').value = dados.nome;
@@ -92,18 +76,14 @@
                 }
             }
         } catch (err) {
-            console.log("Erro ao carregar ou perfil novo.");
+            console.error("Erro ao carregar perfil:", err);
         }
     });
 
+    // Pré-visualização da imagem
     fileInput.addEventListener('change', function() {
         const file = this.files[0];
         if (file) {
-            if (file.size > 1.5 * 1024 * 1024) {
-                alert("Foto muito pesada! Escolha uma de até 1.5MB.");
-                this.value = "";
-                return;
-            }
             const reader = new FileReader();
             reader.onload = function(e) {
                 profileDisplay.src = e.target.result;
@@ -113,11 +93,11 @@
         }
     });
 
-    // 2. SALVAR COM BYPASS DE CACHE
+    // 2. SALVAR ALTERAÇÕES
     document.getElementById('perfilForm').addEventListener('submit', async (e) => {
         e.preventDefault();
         const btn = document.getElementById('btnSalvar');
-        btn.innerText = "Sincronizando...";
+        btn.innerText = "Salvando...";
         btn.disabled = true;
 
         const dados = {
@@ -129,32 +109,37 @@
         };
 
         try {
-            // Forçamos a rede com o timestamp na URL
-            const response = await fetch('/atualizar-perfil?v=' + Date.now(), {
+            const response = await fetch('/atualizar-perfil', {
                 method: 'POST',
-                headers: { 
-                    'Content-Type': 'application/json',
-                    'Cache-Control': 'no-cache' 
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(dados)
             });
 
             if (response.ok) {
-                const resultado = await response.json();
-                console.log("Resposta do Supabase:", resultado);
-                alert("✅ Perfil salvo no Supabase!");
+                alert("✅ Perfil atualizado com sucesso!");
             } else {
-                const erro = await response.json();
-                alert("❌ Erro no Servidor: " + (erro.detail || "Falha ao comunicar com Supabase"));
+                const errorData = await response.json();
+                alert("❌ Erro: " + (errorData.detail || "Falha ao salvar"));
             }
+        } catch (err) {
+            alert("❌ Erro de conexão.");
+            console.error(err);
+        } finally {
+            btn.innerText = "Salvar Alterações";
+            btn.disabled = false;
+        }
     });
 
     window.fazerLogout = async function() {
         if (!confirm("Deseja sair?")) return;
-        await signOut(auth);
-        await fetch('/logout', { method: 'POST' });
-        window.location.href = "/entrar";
-    }
+        try {
+            await signOut(auth);
+            await fetch('/logout', { method: 'POST' });
+            window.location.href = "/entrar";
+        } catch (err) {
+            console.error(err);
+        }
+    };
 </script>
 </body>
 </html>
