@@ -168,7 +168,7 @@ async def logout(): # Remova o parâmetro response daqui se não for usar cookie
 
 #
 @app.get("/plantoes", response_class=HTMLResponse)
-async def pag_plantoes(request: Request):
+async def pag_plantoes(request: Request, response: Response):
     if not request.session.get("user_email"):
         return RedirectResponse(url="/entrar")
     response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
@@ -354,7 +354,7 @@ def startup():
 
 # 1. Rota para mostrar a página de perfil
 @app.get("/perfil", response_class=HTMLResponse)
-async def pag_perfil(request: Request):
+async def pag_perfil(request: Request, response: Response):
     user_email = request.session.get("user_email")
     print(f"DEBUG NAVEGAÇÃO: Tentando acessar /perfil. Email na sessão: {user_email}")
 
@@ -885,6 +885,7 @@ async def resultados_publicos(request: Request):
     </body>
     </html>
     """
+
 
 
 
