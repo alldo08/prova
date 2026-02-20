@@ -27,18 +27,20 @@
         <input type="file" id="fileInput" accept="image/*">
     </div>
 
-    <form id="perfilForm">
+    <form id="perfilForm" action="/atualizar-perfil" method="POST">
+        <input type="hidden" name="foto" id="fotoHidden">
+
         <label>Seu Nome Completo:</label>
-        <input type="text" id="nome" placeholder="Digite seu nome" required>
+        <input type="text" name="nome" id="nome" placeholder="Digite seu nome" required>
 
         <label>Peso (kg):</label>
-        <input type="number" id="peso" step="0.1" placeholder="Ex: 75.5" required>
+        <input type="number" name="peso" id="peso" step="0.1" placeholder="Ex: 75.5" required>
 
         <label>Altura (cm):</label>
-        <input type="number" id="altura" placeholder="Ex: 175" required>
+        <input type="number" name="altura" id="altura" placeholder="Ex: 175" required>
 
         <label>Qualidades Profissionais:</label>
-        <textarea id="qualidades" rows="4" placeholder="Sua experiência..." required></textarea>
+        <textarea name="qualidades" id="qualidades" rows="4" placeholder="Sua experiência..." required></textarea>
 
         <button type="submit" class="btn-save" id="btnSalvar">Salvar Alterações</button>
     </form>
@@ -58,9 +60,9 @@
 
     const fileInput = document.getElementById('fileInput');
     const profileDisplay = document.getElementById('profileDisplay');
-    let fotoBase64 = "";
+    const fotoHidden = document.getElementById('fotoHidden');
 
-    // 1. CARREGAR DADOS
+    // 1. CARREGAR DADOS (Mantemos o fetch apenas para carregar os campos ao abrir)
     window.addEventListener('load', async () => {
         try {
             const response = await fetch('/obter-perfil?t=' + Date.now());
@@ -72,7 +74,7 @@
                 if (dados.qualidades) document.getElementById('qualidades').value = dados.qualidades;
                 if (dados.foto) {
                     profileDisplay.src = dados.foto;
-                    fotoBase64 = dados.foto;
+                    fotoHidden.value = dados.foto;
                 }
             }
         } catch (err) {
@@ -80,55 +82,21 @@
         }
     });
 
-    // Pré-visualização da imagem
+    // Pré-visualização da imagem e conversão para Base64
     fileInput.addEventListener('change', function() {
         const file = this.files[0];
         if (file) {
             const reader = new FileReader();
             reader.onload = function(e) {
                 profileDisplay.src = e.target.result;
-                fotoBase64 = e.target.result;
+                fotoHidden.value = e.target.result; // Salva o texto da imagem no input hidden
             }
             reader.readAsDataURL(file);
         }
     });
 
-    // 2. SALVAR ALTERAÇÕES
-    document.getElementById('perfilForm').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const btn = document.getElementById('btnSalvar');
-        btn.innerText = "Salvando...";
-        btn.disabled = true;
-
-        const dados = {
-            nome: document.getElementById('nome').value,
-            peso: document.getElementById('peso').value,
-            altura: document.getElementById('altura').value,
-            qualidades: document.getElementById('qualidades').value,
-            foto: fotoBase64
-        };
-
-        try {
-            const response = await fetch('/atualizar-perfil', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(dados)
-            });
-
-            if (response.ok) {
-                alert("✅ Perfil atualizado com sucesso!");
-            } else {
-                const errorData = await response.json();
-                alert("❌ Erro: " + (errorData.detail || "Falha ao salvar"));
-            }
-        } catch (err) {
-            alert("❌ Erro de conexão.");
-            console.error(err);
-        } finally {
-            btn.innerText = "Salvar Alterações";
-            btn.disabled = false;
-        }
-    });
+    // O envio agora é feito automaticamente pelo navegador ao clicar no botão submit
+    // devido aos atributos 'action' e 'method' no <form>.
 
     window.fazerLogout = async function() {
         if (!confirm("Deseja sair?")) return;
