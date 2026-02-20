@@ -27,7 +27,7 @@
         <input type="file" id="fileInput" accept="image/*">
     </div>
 
-    <form id="perfilForm" action="/atualizar-perfil" method="POST">
+    <form id="perfilForm">
         <input type="hidden" name="foto" id="fotoHidden">
 
         <label>Seu Nome Completo:</label>
@@ -62,7 +62,7 @@
     const profileDisplay = document.getElementById('profileDisplay');
     const fotoHidden = document.getElementById('fotoHidden');
 
-    // 1. CARREGAR DADOS (Mantemos o fetch apenas para carregar os campos ao abrir)
+    // 1. CARREGAR DADOS
     window.addEventListener('load', async () => {
         try {
             const response = await fetch('/obter-perfil?t=' + Date.now());
@@ -78,25 +78,59 @@
                 }
             }
         } catch (err) {
-            console.error("Erro ao carregar perfil:", err);
+            console.error("Erro ao carregar:", err);
         }
     });
 
-    // Pré-visualização da imagem e conversão para Base64
     fileInput.addEventListener('change', function() {
         const file = this.files[0];
         if (file) {
             const reader = new FileReader();
             reader.onload = function(e) {
                 profileDisplay.src = e.target.result;
-                fotoHidden.value = e.target.result; // Salva o texto da imagem no input hidden
+                fotoHidden.value = e.target.result;
             }
             reader.readAsDataURL(file);
         }
     });
 
-    // O envio agora é feito automaticamente pelo navegador ao clicar no botão submit
-    // devido aos atributos 'action' e 'method' no <form>.
+    // 2. SALVAR DADOS (Simulando o formulário de candidatos)
+    document.getElementById('perfilForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        const btn = document.getElementById('btnSalvar');
+        btn.innerText = "Salvando...";
+        btn.disabled = true;
+
+        // Criamos um FormData exatamente como o formulário de cadastro usa
+        const formData = new FormData(this);
+
+        try {
+            const response = await fetch('/atualizar-perfil', {
+                method: 'POST',
+                body: formData // Envia no formato Multipart/Form-Data
+            });
+
+            const result = await response.text();
+
+            if (response.ok) {
+                // Se o servidor retornar o <script>alert...</script>
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = result;
+                const script = tempDiv.querySelector('script');
+                if (script) eval(script.innerText);
+                else alert("✅ Perfil atualizado!");
+            } else {
+                alert("❌ Erro na sessão ou no servidor.");
+                window.location.href = "/entrar";
+            }
+        } catch (err) {
+            console.error(err);
+            alert("❌ Erro de conexão.");
+        } finally {
+            btn.innerText = "Salvar Alterações";
+            btn.disabled = false;
+        }
+    });
 
     window.fazerLogout = async function() {
         if (!confirm("Deseja sair?")) return;
