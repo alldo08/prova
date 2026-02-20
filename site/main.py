@@ -21,8 +21,7 @@ from firebase_admin import auth, credentials, firestore
 from pydantic import BaseModel
 import base64
 from starlette.middleware.sessions import SessionMiddleware # <--- Adicione esta linha
-from sqlalchemy import create_client, create_engine, text
-# 1. Tenta pegar o conteúdo da variável de ambiente que você criou no Render
+from sqlalchemy import create_engine, text# 1. Tenta pegar o conteúdo da variável de ambiente que você criou no Render
 # Tenta o caminho padrão de segredos do Render primeiro
 # Se não encontrar, tenta na raiz do projeto
 if os.path.exists("/etc/secrets/firebase-adminsdk.json"):
@@ -843,6 +842,7 @@ async def resultados_publicos(request: Request):
     </body>
     </html>
     """
+
 
 
 
