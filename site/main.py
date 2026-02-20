@@ -106,7 +106,7 @@ async def login_page(request: Request):
 
 #Auth#
 @app.post("/auth/callback")
-async def auth_callback(body: TokenBody):
+async def auth_callback(request: Request, body: TokenBody): # Adicionei o 'request' aqui
     try:
         # 1. Verifica o token do Firebase
         decoded_token = auth.verify_id_token(body.token)
@@ -118,26 +118,19 @@ async def auth_callback(body: TokenBody):
         
         if not doc.exists:
             print(f"🚫 Acesso negado para: {email}")
-            # Usamos HTTPException para o FastAPI interromper o fluxo aqui
             raise HTTPException(status_code=403, detail="E-mail não autorizado no sistema.")
 
-        # 3. Se chegou aqui, o e-mail é válido. Criamos a resposta.
-        print(f"✅ Acesso liberado: {email}")
-        response = JSONResponse(content={"status": "success", "redirect": "/perfil"})
+        # ==========================================
+        # 3. AQUI ESTÁ O SEGREDO: SALVAR NA SESSÃO
+        # ==========================================
+        request.session["user_email"] = email  # Agora o 'atualizar-perfil' vai achar o email
+        print(f"✅ Sessão criada para: {email}")
         
-        # 4. Configuração do Cookie (Crucial para o Render/HTTPS)
-        response.set_cookie(
-            key="session_user",
-            value=email,
-            httponly=True,   # Impede acesso via JS (segurança)
-            secure=True,     # Exige HTTPS (necessário no Render)
-            samesite="lax",  # Permite navegação entre páginas do mesmo site
-            max_age=86400    # Expira em 24 horas
-        )
-        return response
-
+        # 4. Retorna o sucesso para o frontend
+        # Não precisa mais de set_cookie manual, o SessionMiddleware cuida disso sozinho!
+        return JSONResponse(content={"status": "success", "redirect": "/perfil"})
+    
     except HTTPException as he:
-        # Re-lança o erro 403 se ele foi gerado acima
         raise he
     except Exception as e:
         print(f"❌ Erro de autenticação: {str(e)}")
@@ -370,18 +363,46 @@ async def atualizar_perfil(
     altura: str = Form(...),
     qualidades: str = Form(...),
     foto: str = Form("")
-    ):
+):
+    # 1. Recupera o e-mail da sessão
     user_email = request.session.get("user_email")
-    print(f"DEBUG FINAL - Email: {user_email}") # Acompanhe no log do Render
-    
+    print(f"DEBUG FINAL - Tentando salvar para: {user_email}") 
+
+    # 2. Verifica se o usuário está logado
     if not user_email:
         return HTMLResponse("<script>alert('Sessão expirada! Faça login novamente.'); window.location.href='/entrar';</script>")
 
-    # ... seu código de cur.execute e conn.commit aqui ...
-    return HTMLResponse("<script>alert('✅ Salvo com sucesso!'); window.location.href='/perfil';</script>")    #response = await call_next(request)
-    #response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
-   # return response
+    try:
+        # 3. Conecta ao Banco de Dados (PostgreSQL/Supabase)
+        conn = get_db_connection()
+        cur = conn.cursor()
 
+        # 4. Executa o SQL de Inserção ou Atualização (UPSERT)
+        # Certifique-se de que a tabela 'usuarios_perfil' tem o campo 'email' como UNIQUE ou PRIMARY KEY
+        cur.execute("""
+            INSERT INTO usuarios_perfil (email, nome, peso, altura, qualidades, foto)
+            VALUES (%s, %s, %s, %s, %s, %s)
+            ON CONFLICT (email) 
+            DO UPDATE SET 
+                nome = EXCLUDED.nome,
+                peso = EXCLUDED.peso,
+                altura = EXCLUDED.altura,
+                qualidades = EXCLUDED.qualidades,
+                foto = EXCLUDED.foto;
+        """, (user_email, nome, peso, altura, qualidades, foto))
+
+        # 5. Salva e fecha a conexão
+        conn.commit()
+        cur.close()
+        conn.close()
+
+        print(f"✅ SUCESSO: Perfil de {user_email} salvo com sucesso.")
+        return HTMLResponse("<script>alert('✅ Perfil atualizado com sucesso!'); window.location.href='/perfil';</script>")
+
+    except Exception as e:
+        print(f"❌ ERRO NO BANCO: {str(e)}")
+        # Em caso de erro, avisa o usuário sem deslogar
+        return HTMLResponse(f"<script>alert('Erro técnico ao salvar: {str(e)}'); window.history.back();</script>")
 # =============================
 # PERGUNTAS (Base de Dados)
 # =============================
@@ -827,6 +848,7 @@ async def resultados_publicos(request: Request):
     </body>
     </html>
     """
+
 
 
 
