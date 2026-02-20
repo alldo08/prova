@@ -66,10 +66,11 @@ db = firestore.client()
 app = FastAPI()
 app.add_middleware(
     SessionMiddleware, 
-    secret_key="sua_chave_aqui", 
-    session_cookie="session",
-    same_site="lax", # Ajuda a manter a sessão em redirecionamentos
-    https_only=False # Mude para True se estiver apenas no Render (produção)
+    secret_key="UMA_CHAVE_FIXA_MUITO_LONGA_AQUI", # Use algo fixo e não mude mais
+    session_cookie="perfil_session",
+    same_site="lax",   # Permite que o cookie viaje com o POST do formulário
+    https_only=True,   # OBRIGATÓRIO no Render (HTTPS)
+    max_age=3600       # Mantém logado por 1 hora
 )
 templates = Jinja2Templates(directory="templates")
 
@@ -856,6 +857,7 @@ async def resultados_publicos(request: Request):
     </body>
     </html>
     """
+
 
 
 
