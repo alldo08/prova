@@ -139,14 +139,23 @@
     });
 
     // LOGOUT
-    document.getElementById('btnLogout').addEventListener('click', async () => {
-        if (!confirm("Deseja sair da conta?")) return;
-        try {
-            await signOut(auth);
-            await fetch('/logout', { method: 'POST' });
-            window.location.href = "/entrar";
-        } catch (e) { console.error("Erro no logout:", e); }
-    });
+   document.getElementById('btnLogout').addEventListener('click', async () => {
+    if (!confirm("Deseja realmente sair?")) return;
+
+    try {
+        // 1. Avisa o Python para limpar a sessão
+        await fetch('/logout', { method: 'POST' });
+
+        // 2. Desloga do Firebase
+        await signOut(auth);
+
+        // 3. Limpa qualquer dado residual e manda para o login
+        window.location.replace("/entrar"); 
+    } catch (e) {
+        console.error("Erro ao sair:", e);
+        window.location.href = "/entrar"; // Força a saída mesmo com erro
+    }
+});
 </script>
 </body>
 </html>
