@@ -140,17 +140,13 @@
             });
 
             if (response.ok) {
-                alert("✅ Alterações salvas no banco de dados!");
+                const resultado = await response.json();
+                console.log("Resposta do Supabase:", resultado);
+                alert("✅ Perfil salvo no Supabase!");
             } else {
-                const erroServidor = await response.json();
-                alert("❌ O servidor recusou os dados: " + (erroServidor.detail || "Erro desconhecido"));
+                const erro = await response.json();
+                alert("❌ Erro no Servidor: " + (erro.detail || "Falha ao comunicar com Supabase"));
             }
-        } catch (err) {
-            alert("❌ Erro de rede. O Service Worker pode estar offline ou o servidor caiu.");
-        } finally {
-            btn.innerText = "Salvar Alterações";
-            btn.disabled = false;
-        }
     });
 
     window.fazerLogout = async function() {
