@@ -70,7 +70,8 @@ app.add_middleware(
     session_cookie="session",
     same_site="lax", # Ajuda a manter a sessão em redirecionamentos
     https_only=False # Mude para True se estiver apenas no Render (produção)
-)templates = Jinja2Templates(directory="templates")
+)
+    templates = Jinja2Templates(directory="templates")
 
 # 1. Tenta o caminho relativo ao arquivo main.py
 base_dir = os.path.dirname(os.path.abspath(__file__))
@@ -855,6 +856,7 @@ async def resultados_publicos(request: Request):
     </body>
     </html>
     """
+
 
 
 
