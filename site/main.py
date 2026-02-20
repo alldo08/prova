@@ -347,19 +347,28 @@ async def obter_perfil(request: Request):
 
 @app.post("/atualizar-perfil")
 async def atualizar_perfil(request: Request):
+    print("--- REQUISIÇÃO RECEBIDA ---") # Isso TEM que aparecer no Log do Render
+    user_email = request.session.get("user_email")
+    print(f"Usuário da sessão: {user_email}")
+    
     try:
-        user_email = request.session.get("user_email")
-        if not user_email:
-            return {"error": "nao_logado"}, 401
-
         data = await request.json()
+        print(f"Dados recebidos: {data.get('nome')}, {data.get('peso')}")
+
+        if not user_email:
+            print("ERRO: Usuário não está na sessão!")
+            return {"status": "error", "detail": "Sessão inválida"}, 401
+
+        # GRAVAÇÃO
+        doc_ref = db.collection("usuarios_perfil").document(user_email)
+        doc_ref.set(data, merge=True)
         
-        # O Firestore pode falhar se o 'data' estiver vazio ou corrompido
-        db.collection("usuarios_perfil").document(user_email).set(data, merge=True)
+        print("✅ GRAVADO NO FIRESTORE COM SUCESSO!")
         return {"status": "success"}
+
     except Exception as e:
-        print(f"Erro no atualizar-perfil: {e}")
-        return {"detail": str(e)}, 500
+        print(f"❌ ERRO AO GRAVAR: {e}")
+        return {"status": "error", "detail": str(e)}, 500
 
 
 #@app.middleware("http")
@@ -813,6 +822,7 @@ async def resultados_publicos(request: Request):
     </body>
     </html>
     """
+
 
 
 
