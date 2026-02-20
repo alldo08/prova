@@ -162,6 +162,7 @@ async def logout(): # Remova o parâmetro response daqui se não for usar cookie
     response = RedirectResponse(url="/entrar", status_code=303)
     response.delete_cookie("session_user")
     request.session.clear()
+    return JSONResponse({"status": "success"})
     return response
 
 
@@ -170,6 +171,7 @@ async def logout(): # Remova o parâmetro response daqui se não for usar cookie
 async def pag_plantoes(request: Request):
     if not request.session.get("user_email"):
         return RedirectResponse(url="/entrar")
+    response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
     with open("templates/plantoes.html", "r", encoding="utf-8") as f:
         return f.read()
 #acesso
@@ -359,6 +361,8 @@ async def pag_perfil(request: Request):
     if not user_email:
         print("⚠️ Sessão vazia! Redirecionando para /entrar")
         return RedirectResponse(url="/entrar")
+
+    response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
     
     try:
         with open("templates/perfil.html", "r", encoding="utf-8") as f:
@@ -881,6 +885,7 @@ async def resultados_publicos(request: Request):
     </body>
     </html>
     """
+
 
 
 
