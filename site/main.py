@@ -104,31 +104,44 @@ def usuario_logado(request: Request):
 async def login_page(request: Request):
     return templates.TemplateResponse("entrar.html", {"request": request})
 
-#Auth#
-@app.post("/auth/callback")
-async def auth_callback(request: Request, body: TokenBody): # Adicionei o 'request' aqui
+#Auth#@app.post("/auth/callback")
+async def auth_callback(request: Request, body: TokenBody):
     try:
         # 1. Verifica o token do Firebase
         decoded_token = auth.verify_id_token(body.token)
         email = decoded_token.get('email').lower().strip()
 
-        # 2. Verificação no Firestore
-        db = firestore.client()
-        doc = db.collection("permissoes").document(email).get()
+        # 2. Verificação de permissão no Firestore
+        db_fire = firestore.client()
+        doc = db_fire.collection("permissoes").document(email).get()
         
         if not doc.exists:
             print(f"🚫 Acesso negado para: {email}")
             raise HTTPException(status_code=403, detail="E-mail não autorizado no sistema.")
 
-        # ==========================================
-        # 3. AQUI ESTÁ O SEGREDO: SALVAR NA SESSÃO
-        # ==========================================
-        request.session["user_email"] = email  # Agora o 'atualizar-perfil' vai achar o email
+        # 3. Salva o e-mail na Sessão (Crucial)
+        request.session["user_email"] = email
         print(f"✅ Sessão criada para: {email}")
+
+        # 4. VERIFICAÇÃO INTELIGENTE DE REDIRECIONAMENTO
+        # Vamos checar no banco se esse e-mail já tem perfil cadastrado
+        try:
+            conn = get_db_connection()
+            cur = conn.cursor()
+            cur.execute("SELECT email FROM usuarios_perfil WHERE email = %s", (email,))
+            usuario_existe = cur.fetchone()
+            cur.close()
+            conn.close()
+        except Exception as db_err:
+            print(f"⚠️ Erro ao checar perfil (redirecionando para /perfil por segurança): {db_err}")
+            usuario_existe = None
+
+        # Se existir perfil, vai para plantões. Se não, vai preencher o perfil.
+        destino = "/plantoes" if usuario_existe else "/perfil"
         
-        # 4. Retorna o sucesso para o frontend
-        # Não precisa mais de set_cookie manual, o SessionMiddleware cuida disso sozinho!
-        return JSONResponse(content={"status": "success", "redirect": "/perfil"})
+        print(f"➡️ Redirecionando {email} para {destino}")
+        
+        return JSONResponse(content={"status": "success", "redirect": destino})
     
     except HTTPException as he:
         raise he
@@ -144,7 +157,13 @@ async def logout(): # Remova o parâmetro response daqui se não for usar cookie
     return response
 
 
-
+#
+@app.get("/plantoes", response_class=HTMLResponse)
+async def pag_plantoes(request: Request):
+    if not request.session.get("user_email"):
+        return RedirectResponse(url="/entrar")
+    with open("templates/plantoes.html", "r", encoding="utf-8") as f:
+        return f.read()
 #acesso
 @app.get("/admin/acessos")
 async def pagina_gestao_acessos(request: Request):
@@ -848,6 +867,7 @@ async def resultados_publicos(request: Request):
     </body>
     </html>
     """
+
 
 
 
