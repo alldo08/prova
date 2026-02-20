@@ -157,13 +157,10 @@ async def auth_callback(request: Request, body: TokenBody):
         print(f"❌ Erro de autenticação: {str(e)}")
         raise HTTPException(status_code=401, detail="Token inválido ou expirado.")
 #logout#
-@app.get("/logout")
-async def logout(): # Remova o parâmetro response daqui se não for usar cookie manual
-    response = RedirectResponse(url="/entrar", status_code=303)
-    response.delete_cookie("session_user")
-    request.session.clear()
+@app.post("/logout")
+async def logout(request: Request):
+    request.session.clear()  # Destrói a sessão no servidor
     return JSONResponse({"status": "success"})
-    return response
 
 
 #
@@ -885,6 +882,7 @@ async def resultados_publicos(request: Request):
     </body>
     </html>
     """
+
 
 
 
