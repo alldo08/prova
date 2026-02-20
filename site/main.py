@@ -104,7 +104,8 @@ def usuario_logado(request: Request):
 async def login_page(request: Request):
     return templates.TemplateResponse("entrar.html", {"request": request})
 
-#Auth#@app.post("/auth/callback")
+#Auth#
+@app.post("/auth/callback")
 async def auth_callback(request: Request, body: TokenBody):
     try:
         # 1. Verifica o token do Firebase
@@ -867,6 +868,7 @@ async def resultados_publicos(request: Request):
     </body>
     </html>
     """
+
 
 
 
