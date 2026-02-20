@@ -1,3 +1,12 @@
+self.addEventListener('fetch', (event) => {
+    // Se a URL contiver 'atualizar-perfil' ou 'obter-perfil', NÃO use o cache
+    if (event.request.url.includes('atualizar-perfil') || event.request.url.includes('obter-perfil')) {
+        return; // Sai do Service Worker e deixa a requisição ir para a rede real
+    }
+
+    // ... resto do seu código de cache atual ...
+});
+
 const CACHE_NAME = 'santer-saude-v2'; // Mude a versão sempre que atualizar o app
 const ASSETS_TO_CACHE = [
     '/entrar',
