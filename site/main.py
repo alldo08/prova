@@ -347,29 +347,38 @@ async def obter_perfil(request: Request):
 
 @app.post("/atualizar-perfil")
 async def atualizar_perfil(request: Request):
-    print("--- REQUISIÇÃO RECEBIDA ---") # Isso TEM que aparecer no Log do Render
-    user_email = request.session.get("user_email")
-    print(f"Usuário da sessão: {user_email}")
-    
     try:
-        data = await request.json()
-        print(f"Dados recebidos: {data.get('nome')}, {data.get('peso')}")
-
-        if not user_email:
-            print("ERRO: Usuário não está na sessão!")
-            return {"status": "error", "detail": "Sessão inválida"}, 401
-
-        # GRAVAÇÃO
-        doc_ref = db.collection("usuarios_perfil").document(user_email)
-        doc_ref.set(data, merge=True)
+        # 1. Pegar o email da sessão
+        user_email = request.session.get("user_email")
         
-        print("✅ GRAVADO NO FIRESTORE COM SUCESSO!")
-        return {"status": "success"}
+        if not user_email:
+            print("ERRO: Sessão não encontrada no servidor")
+            return {"status": "error", "detail": "Usuário não logado na sessão"}, 401
+
+        # 2. Receber os dados do HTML
+        data = await request.json()
+        
+        # 3. Montar o objeto para o Supabase
+        # Certifique-se que os nomes das colunas na sua tabela são iguais a estes
+        payload = {
+            "email": user_email,
+            "nome": data.get("nome"),
+            "peso": float(data.get("peso")) if data.get("peso") else 0,
+            "altura": int(data.get("altura")) if data.get("altura") else 0,
+            "qualidades": data.get("qualidades"),
+            "foto": data.get("foto")  # O Base64 da imagem
+        }
+
+        # 4. Salvar no Supabase (usando a sua variável 'supabase' configurada)
+        # O 'upsert' usa a coluna 'email' como chave única para saber se atualiza ou cria
+        resultado = supabase.table("usuarios_perfil").upsert(payload).execute()
+
+        print(f"✅ SUCESSO NO SUPABASE PARA: {user_email}")
+        return {"status": "success", "data": resultado.data}
 
     except Exception as e:
-        print(f"❌ ERRO AO GRAVAR: {e}")
+        print(f"❌ ERRO CRÍTICO SUPABASE: {str(e)}")
         return {"status": "error", "detail": str(e)}, 500
-
 
 #@app.middleware("http")
 #async def add_no_cache_headers(request: Request, call_next):
@@ -822,6 +831,7 @@ async def resultados_publicos(request: Request):
     </body>
     </html>
     """
+
 
 
 
