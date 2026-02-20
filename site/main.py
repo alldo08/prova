@@ -64,8 +64,13 @@ else:
 db = firestore.client()
 # Isso diz: "Tudo que começar com /static, procure na pasta física chamada static"
 app = FastAPI()
-app.add_middleware(SessionMiddleware, secret_key="uma-chave-muito-secret1212a")
-templates = Jinja2Templates(directory="templates")
+app.add_middleware(
+    SessionMiddleware, 
+    secret_key="sua_chave_aqui", 
+    session_cookie="session",
+    same_site="lax", # Ajuda a manter a sessão em redirecionamentos
+    https_only=False # Mude para True se estiver apenas no Render (produção)
+)templates = Jinja2Templates(directory="templates")
 
 # 1. Tenta o caminho relativo ao arquivo main.py
 base_dir = os.path.dirname(os.path.abspath(__file__))
@@ -362,18 +367,23 @@ async def atualizar_perfil(
     peso: str = Form(...),
     altura: str = Form(...),
     qualidades: str = Form(...),
-    foto: str = Form("") # Recebe o Base64 da foto como texto
+    foto: str = Form("")
 ):
-    try:
-        user_email = request.session.get("user_email")
-        if not user_email:
-            return HTMLResponse("<script>alert('Sessão expirada. Faça login novamente.'); window.location.href='/entrar';</script>")
+    # Pega o email da sessão
+    user_email = request.session.get("user_email")
+    
+    # LOG DE SEGURANÇA: Vamos ver se a sessão sumiu aqui
+    print(f"DEBUG: Tentando salvar perfil para: {user_email}")
 
-        # Usando a sua conexão direta com o banco (get_db_connection)
+    if not user_email:
+        print("DEBUG: Sessão perdida no POST!")
+        return HTMLResponse("<script>alert('Sessão perdida! Por favor, faça login novamente.'); window.location.href='/entrar';</script>")
+
+    try:
         conn = get_db_connection()
         cur = conn.cursor()
         
-        # SQL UPSERT (Insere ou Atualiza se o email já existir)
+        # SQL UPSERT - IGUAL AO QUE FUNCIONA NO SUPABASE
         cur.execute("""
             INSERT INTO usuarios_perfil (email, nome, peso, altura, qualidades, foto)
             VALUES (%s, %s, %s, %s, %s, %s)
@@ -390,12 +400,12 @@ async def atualizar_perfil(
         cur.close()
         conn.close()
         
+        print(f"✅ SUCESSO: Perfil de {user_email} salvo no banco!")
         return HTMLResponse("<script>alert('✅ Perfil atualizado com sucesso!'); window.location.href='/perfil';</script>")
 
     except Exception as e:
-        print(f"Erro ao atualizar perfil: {e}")
-        return HTMLResponse(f"<script>alert('❌ Erro ao salvar: {str(e)}'); window.history.back();</script>")
-#async def add_no_cache_headers(request: Request, call_next):
+        print(f"❌ ERRO NO BANCO: {e}")
+        return HTMLResponse(f"<script>alert('Erro ao salvar: {str(e)}'); window.history.back();</script>")#async def add_no_cache_headers(request: Request, call_next):
     #response = await call_next(request)
     #response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
    # return response
@@ -845,6 +855,7 @@ async def resultados_publicos(request: Request):
     </body>
     </html>
     """
+
 
 
 
