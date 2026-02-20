@@ -354,14 +354,18 @@ async def obter_perfil(request: Request):
 
 @app.post("/atualizar-perfil")
 async def atualizar_perfil(request: Request):
+    print(">>> TENTATIVA DE SALVAMENTO RECEBIDA NO RENDER <<<")
     try:
         user_email = request.session.get("user_email")
+        print(f">>> Email na sessão: {user_email}")
+
         if not user_email:
-            return {"status": "error", "detail": "Sessão expirada"}, 401
+            print(">>> ERRO: REQUISIÇÃO SEM SESSÃO ATIVA!")
+            return {"status": "error", "detail": "Sessão inválida. Saia e entre novamente."}, 401
 
         data = await request.json()
-        
-        # Comando SQL para inserir ou atualizar (UPSERT)
+        print(f">>> Dados para salvar: {data.get('nome')}")
+
         query = text("""
             INSERT INTO usuarios_perfil (email, nome, peso, altura, qualidades, foto)
             VALUES (:email, :nome, :peso, :altura, :qualidades, :foto)
@@ -384,14 +388,13 @@ async def atualizar_perfil(request: Request):
                 "foto": data.get("foto")
             })
             conn.commit()
-
-        print(f"✅ Salvo com sucesso no Supabase via SQL: {user_email}")
+            print(">>> ✅ GRAVADO NO SUPABASE COM SUCESSO!")
+        
         return {"status": "success"}
 
     except Exception as e:
-        print(f"❌ Erro no SQL: {str(e)}")
-        return {"status": "error", "detail": str(e)}, 500
-#@app.middleware("http")
+        print(f">>> ❌ ERRO DE SQL: {str(e)}")
+        return {"status": "error", "detail": str(e)}, 500#@app.middleware("http")
 #async def add_no_cache_headers(request: Request, call_next):
     #response = await call_next(request)
     #response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
@@ -842,6 +845,7 @@ async def resultados_publicos(request: Request):
     </body>
     </html>
     """
+
 
 
 
