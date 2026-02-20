@@ -437,7 +437,7 @@ async def atualizar_perfil(
                 window.location.href = '/plantoes';
             </script>
         """)
-        except Exception as e:
+    except Exception as e:
             return HTMLResponse(f"<script>alert('Erro: {str(e)}'); window.history.back();</script>")
 # =============================
 # PERGUNTAS (Base de Dados)
@@ -884,6 +884,7 @@ async def resultados_publicos(request: Request):
     </body>
     </html>
     """
+
 
 
 
