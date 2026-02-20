@@ -29,14 +29,19 @@
 
     <form id="perfilForm">
         <input type="hidden" name="foto" id="fotoHidden">
+        
         <label>Seu Nome Completo:</label>
         <input type="text" name="nome" id="nome" required>
+        
         <label>Peso (kg):</label>
         <input type="number" name="peso" id="peso" step="0.1" required>
+        
         <label>Altura (cm):</label>
         <input type="number" name="altura" id="altura" required>
+        
         <label>Qualidades Profissionais:</label>
         <textarea name="qualidades" id="qualidades" rows="4" required></textarea>
+        
         <button type="submit" class="btn-save" id="btnSalvar">Salvar Alterações</button>
     </form>
 
@@ -49,7 +54,10 @@
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
     import { getAuth, signOut } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
 
-    const firebaseConfig = { apiKey: "AcbXX3KgvqD7B8Y4WjCu6yNx1Prfu5cNHz", authDomain: "projeto-web-app-16adb.firebaseapp.com" };
+    const firebaseConfig = { 
+        apiKey: "AcbXX3KgvqD7B8Y4WjCu6yNx1Prfu5cNHz", 
+        authDomain: "projeto-web-app-16adb.firebaseapp.com" 
+    };
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
 
@@ -57,7 +65,7 @@
     const profileDisplay = document.getElementById('profileDisplay');
     const fotoHidden = document.getElementById('fotoHidden');
 
-    // 1. CARREGAR DADOS
+    // 1. CARREGAR DADOS DO PERFIL
     window.addEventListener('load', async () => {
         try {
             const res = await fetch('/obter-perfil?t=' + Date.now());
@@ -72,10 +80,10 @@
                     fotoHidden.value = d.foto;
                 }
             }
-        } catch (e) { console.error(e); }
+        } catch (e) { console.error("Erro ao carregar dados:", e); }
     });
 
-    // Pré-visualização da imagem
+    // PRÉ-VISUALIZAÇÃO DA IMAGEM E CONVERSÃO PARA BASE64
     fileInput.addEventListener('change', function() {
         const file = this.files[0];
         if (file) {
@@ -88,9 +96,10 @@
         }
     });
 
-    // 2. SALVAR DADOS
+    // 2. SALVAR DADOS (PREVENINDO ERRO DE SESSÃO)
     document.getElementById('perfilForm').addEventListener('submit', async function(e) {
-        e.preventDefault();
+        e.preventDefault(); // Impede o recarregamento e perda de sessão
+        
         const btn = document.getElementById('btnSalvar');
         btn.innerText = "Sincronizando...";
         btn.disabled = true;
@@ -98,35 +107,45 @@
         const formData = new FormData(this);
 
         try {
-           const response = await fetch('/atualizar-perfil', {
+            const response = await fetch('/atualizar-perfil', {
                 method: 'POST',
                 body: formData,
-                credentials: 'include' // ISSO força o envio dos cookies de sessão
+                credentials: 'include' // Garante que o cookie de sessão vá junto
             });
 
-
-            if (response.ok) {
-                alert("✅ Perfil salvo no Supabase!");
+            const result = await response.text();
+            
+            // Injeta o alerta que vem do Python no HTMLResponse
+            const container = document.createElement('div');
+            container.innerHTML = result;
+            const script = container.querySelector('script');
+            
+            if (script) {
+                eval(script.innerText);
+            } else if (response.ok) {
+                alert("✅ Perfil salvo com sucesso!");
                 window.location.reload();
             } else {
-                alert("❌ Erro ao salvar. Tente novamente.");
+                alert("❌ Erro ao salvar. Verifique se você ainda está logado.");
+                window.location.href = "/entrar";
             }
         } catch (err) {
-            alert("❌ Erro de conexão.");
+            console.error("Erro de conexão:", err);
+            alert("Erro de conexão. O servidor pode estar reiniciando.");
         } finally {
             btn.innerText = "Salvar Alterações";
             btn.disabled = false;
         }
     });
 
-    // Logout
+    // LOGOUT
     document.getElementById('btnLogout').addEventListener('click', async () => {
-        if (!confirm("Deseja sair?")) return;
+        if (!confirm("Deseja sair da conta?")) return;
         try {
             await signOut(auth);
             await fetch('/logout', { method: 'POST' });
             window.location.href = "/entrar";
-        } catch (e) { console.error(e); }
+        } catch (e) { console.error("Erro no logout:", e); }
     });
 </script>
 </body>
