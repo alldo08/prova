@@ -143,17 +143,26 @@
     if (!confirm("Deseja realmente sair?")) return;
 
     try {
-        // 1. Avisa o Python para limpar a sessão
-        await fetch('/logout', { method: 'POST' });
+        // 1. Limpa a sessão no Python (Obrigatório)
+        const response = await fetch('/logout', { 
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        });
 
-        // 2. Desloga do Firebase
-        await signOut(auth);
+        if (response.ok) {
+            // 2. Desloga do Firebase (Opcional, mas recomendado)
+            await auth.signOut(); 
 
-        // 3. Limpa qualquer dado residual e manda para o login
-        window.location.replace("/entrar"); 
+            // 3. Redireciona limpando o histórico para não conseguir "voltar"
+            window.location.replace("/entrar");
+        } else {
+            console.error("Erro ao limpar sessão no servidor.");
+            // Mesmo com erro no server, forçamos a saída local
+            window.location.replace("/entrar");
+        }
     } catch (e) {
-        console.error("Erro ao sair:", e);
-        window.location.href = "/entrar"; // Força a saída mesmo com erro
+        console.error("Erro no logout:", e);
+        window.location.replace("/entrar");
     }
 });
 </script>
