@@ -98,10 +98,12 @@
         const formData = new FormData(this);
 
         try {
-            const response = await fetch('/atualizar-perfil', {
+           const response = await fetch('/atualizar-perfil', {
                 method: 'POST',
-                body: formData
+                body: formData,
+                credentials: 'include' // ISSO força o envio dos cookies de sessão
             });
+
 
             if (response.ok) {
                 alert("✅ Perfil salvo no Supabase!");
