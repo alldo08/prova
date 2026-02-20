@@ -29,23 +29,18 @@
 
     <form id="perfilForm">
         <input type="hidden" name="foto" id="fotoHidden">
-
         <label>Seu Nome Completo:</label>
-        <input type="text" name="nome" id="nome" placeholder="Digite seu nome" required>
-
+        <input type="text" name="nome" id="nome" required>
         <label>Peso (kg):</label>
-        <input type="number" name="peso" id="peso" step="0.1" placeholder="Ex: 75.5" required>
-
+        <input type="number" name="peso" id="peso" step="0.1" required>
         <label>Altura (cm):</label>
-        <input type="number" name="altura" id="altura" placeholder="Ex: 175" required>
-
+        <input type="number" name="altura" id="altura" required>
         <label>Qualidades Profissionais:</label>
-        <textarea name="qualidades" id="qualidades" rows="4" placeholder="Sua experiência..." required></textarea>
-
+        <textarea name="qualidades" id="qualidades" rows="4" required></textarea>
         <button type="submit" class="btn-save" id="btnSalvar">Salvar Alterações</button>
     </form>
 
-    <button class="btn-logout" onclick="fazerLogout()">
+    <button class="btn-logout" id="btnLogout">
         <i class="fas fa-sign-out-alt"></i> Sair da Conta
     </button>
 </div>
@@ -65,66 +60,56 @@
     // 1. CARREGAR DADOS
     window.addEventListener('load', async () => {
         try {
-            const response = await fetch('/obter-perfil?t=' + Date.now());
-            if (response.ok) {
-                const dados = await response.json();
-                if (dados.nome) document.getElementById('nome').value = dados.nome;
-                if (dados.peso) document.getElementById('peso').value = dados.peso;
-                if (dados.altura) document.getElementById('altura').value = dados.altura;
-                if (dados.qualidades) document.getElementById('qualidades').value = dados.qualidades;
-                if (dados.foto) {
-                    profileDisplay.src = dados.foto;
-                    fotoHidden.value = dados.foto;
+            const res = await fetch('/obter-perfil?t=' + Date.now());
+            if (res.ok) {
+                const d = await res.json();
+                if (d.nome) document.getElementById('nome').value = d.nome;
+                if (d.peso) document.getElementById('peso').value = d.peso;
+                if (d.altura) document.getElementById('altura').value = d.altura;
+                if (d.qualidades) document.getElementById('qualidades').value = d.qualidades;
+                if (d.foto) {
+                    profileDisplay.src = d.foto;
+                    fotoHidden.value = d.foto;
                 }
             }
-        } catch (err) {
-            console.error("Erro ao carregar:", err);
-        }
+        } catch (e) { console.error(e); }
     });
 
+    // Pré-visualização da imagem
     fileInput.addEventListener('change', function() {
         const file = this.files[0];
         if (file) {
             const reader = new FileReader();
-            reader.onload = function(e) {
+            reader.onload = (e) => {
                 profileDisplay.src = e.target.result;
                 fotoHidden.value = e.target.result;
-            }
+            };
             reader.readAsDataURL(file);
         }
     });
 
-    // 2. SALVAR DADOS (Simulando o formulário de candidatos)
+    // 2. SALVAR DADOS
     document.getElementById('perfilForm').addEventListener('submit', async function(e) {
         e.preventDefault();
         const btn = document.getElementById('btnSalvar');
-        btn.innerText = "Salvando...";
+        btn.innerText = "Sincronizando...";
         btn.disabled = true;
 
-        // Criamos um FormData exatamente como o formulário de cadastro usa
         const formData = new FormData(this);
 
         try {
             const response = await fetch('/atualizar-perfil', {
                 method: 'POST',
-                body: formData // Envia no formato Multipart/Form-Data
+                body: formData
             });
 
-            const result = await response.text();
-
             if (response.ok) {
-                // Se o servidor retornar o <script>alert...</script>
-                const tempDiv = document.createElement('div');
-                tempDiv.innerHTML = result;
-                const script = tempDiv.querySelector('script');
-                if (script) eval(script.innerText);
-                else alert("✅ Perfil atualizado!");
+                alert("✅ Perfil salvo no Supabase!");
+                window.location.reload();
             } else {
-                alert("❌ Erro na sessão ou no servidor.");
-                window.location.href = "/entrar";
+                alert("❌ Erro ao salvar. Tente novamente.");
             }
         } catch (err) {
-            console.error(err);
             alert("❌ Erro de conexão.");
         } finally {
             btn.innerText = "Salvar Alterações";
@@ -132,16 +117,15 @@
         }
     });
 
-    window.fazerLogout = async function() {
+    // Logout
+    document.getElementById('btnLogout').addEventListener('click', async () => {
         if (!confirm("Deseja sair?")) return;
         try {
             await signOut(auth);
             await fetch('/logout', { method: 'POST' });
             window.location.href = "/entrar";
-        } catch (err) {
-            console.error(err);
-        }
-    };
+        } catch (e) { console.error(e); }
+    });
 </script>
 </body>
 </html>
