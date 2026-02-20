@@ -352,23 +352,31 @@ async def obter_perfil(request: Request):
             }
     return {}
 
+from fastapi import Form, Request
+from fastapi.responses import HTMLResponse
+
 @app.post("/atualizar-perfil")
-async def atualizar_perfil(request: Request):
-    print(">>> TENTATIVA DE SALVAMENTO RECEBIDA NO RENDER <<<")
+async def atualizar_perfil(
+    request: Request,
+    nome: str = Form(...),
+    peso: str = Form(...),
+    altura: str = Form(...),
+    qualidades: str = Form(...),
+    foto: str = Form("") # Recebe o Base64 da foto como texto
+):
     try:
         user_email = request.session.get("user_email")
-        print(f">>> Email na sessão: {user_email}")
-
         if not user_email:
-            print(">>> ERRO: REQUISIÇÃO SEM SESSÃO ATIVA!")
-            return {"status": "error", "detail": "Sessão inválida. Saia e entre novamente."}, 401
+            return HTMLResponse("<script>alert('Sessão expirada. Faça login novamente.'); window.location.href='/entrar';</script>")
 
-        data = await request.json()
-        print(f">>> Dados para salvar: {data.get('nome')}")
-
-        query = text("""
+        # Usando a sua conexão direta com o banco (get_db_connection)
+        conn = get_db_connection()
+        cur = conn.cursor()
+        
+        # SQL UPSERT (Insere ou Atualiza se o email já existir)
+        cur.execute("""
             INSERT INTO usuarios_perfil (email, nome, peso, altura, qualidades, foto)
-            VALUES (:email, :nome, :peso, :altura, :qualidades, :foto)
+            VALUES (%s, %s, %s, %s, %s, %s)
             ON CONFLICT (email) 
             DO UPDATE SET 
                 nome = EXCLUDED.nome,
@@ -376,25 +384,17 @@ async def atualizar_perfil(request: Request):
                 altura = EXCLUDED.altura,
                 qualidades = EXCLUDED.qualidades,
                 foto = EXCLUDED.foto;
-        """)
-
-        with engine.connect() as conn:
-            conn.execute(query, {
-                "email": user_email,
-                "nome": data.get("nome"),
-                "peso": float(data.get("peso")) if data.get("peso") else 0,
-                "altura": int(data.get("altura")) if data.get("altura") else 0,
-                "qualidades": data.get("qualidades"),
-                "foto": data.get("foto")
-            })
-            conn.commit()
-            print(">>> ✅ GRAVADO NO SUPABASE COM SUCESSO!")
+        """, (user_email, nome, peso, altura, qualidades, foto))
         
-        return {"status": "success"}
+        conn.commit()
+        cur.close()
+        conn.close()
+        
+        return HTMLResponse("<script>alert('✅ Perfil atualizado com sucesso!'); window.location.href='/perfil';</script>")
 
     except Exception as e:
-        print(f">>> ❌ ERRO DE SQL: {str(e)}")
-        return {"status": "error", "detail": str(e)}, 500#@app.middleware("http")
+        print(f"Erro ao atualizar perfil: {e}")
+        return HTMLResponse(f"<script>alert('❌ Erro ao salvar: {str(e)}'); window.history.back();</script>")
 #async def add_no_cache_headers(request: Request, call_next):
     #response = await call_next(request)
     #response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
@@ -845,6 +845,7 @@ async def resultados_publicos(request: Request):
     </body>
     </html>
     """
+
 
 
 
