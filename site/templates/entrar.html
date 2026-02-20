@@ -33,67 +33,67 @@
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
     import { getAuth, GoogleAuthProvider, signInWithPopup, signOut } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
 
-    console.log("TESTE: O script de login carregou com sucesso.");
-
     const firebaseConfig = {
-          apiKey: "AIzaSyCGkSCkznXVBanRx5gDgeVSRS2mJU90UT8",
-          authDomain: "projeto-web-app-16adb.firebaseapp.com",
-          projectId: "projeto-web-app-16adb",
-          storageBucket: "projeto-web-app-16adb.firebasestorage.app",
-          messagingSenderId: "1011089630045",
-          appId: "1:1011089630045:web:3afc16a9817f11409c7eb4",
-          measurementId: "G-12TW5Q57JE"
-        };
+        apiKey: "AcbXX3KgvqD7B8Y4WjCu6yNx1Prfu5cNHz",
+        authDomain: "projeto-web-app-16adb.firebaseapp.com",
+        projectId: "projeto-web-app-16adb",
+        storageBucket: "projeto-web-app-16adb.firebasestorage.app",
+        messagingSenderId: "1011089630045",
+        appId: "1:1011089630045:web:3afc16a9817f11409c7eb4",
+        measurementId: "G-12TW5Q57JE"
+    };
 
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const provider = new GoogleAuthProvider();
 
-    // Exporta a função para o botão HTML usando o método POPUP
     window.loginComGoogle = async function() {
         const btn = document.getElementById('btnLogin');
         const btnText = document.getElementById('btnText');
         const statusDiv = document.getElementById('status');
 
-        console.log("Botão clicado - Iniciando Popup...");
+        console.log("Botão clicado - Iniciando autenticação...");
         
         btn.disabled = true;
         btnText.innerText = "Conectando...";
 
         try {
-            // 1. Abre a janelinha do Google
+            // 1. Firebase Popup
             const result = await signInWithPopup(auth, provider);
             const user = result.user;
             
             console.log("Firebase OK: ", user.email);
             statusDiv.style.display = 'block';
-            statusDiv.innerText = "Autenticado! Validando com servidor...";
+            statusDiv.innerText = "Autenticado! Validando no servidor...";
 
-            // 2. Obtém o Token
+            // 2. Token
             const idToken = await user.getIdToken();
 
-            // 3. Envia para o Python
+            // 3. Chamada ao Python (auth/callback)
             const response = await fetch("/auth/callback", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ token: idToken })
             });
 
-            if (response.ok) {
-                console.log("Servidor Python OK! Redirecionando...");
-                statusDiv.innerText = "Acesso garantido! Entrando...";
-                window.location.replace("/perfil"); 
+            const data = await response.json();
+
+            if (response.ok && data.status === "success") {
+                console.log("Servidor autorizou acesso!");
+                statusDiv.innerText = "Redirecionando...";
+                
+                // ATUALIZAÇÃO: Usa o redirect enviado pelo Python (/perfil ou /plantoes)
+                window.location.href = data.redirect; 
             } else {
-                const errorData = await response.json();
-                console.error("Servidor Python recusou o acesso.");
-                alert("Acesso negado: " + (errorData.detail || "Usuário não autorizado no banco."));
+                console.error("Servidor recusou o acesso.");
+                alert("Acesso negado: " + (data.message || data.detail || "Usuário não autorizado."));
                 await signOut(auth);
                 resetBotao();
             }
 
         } catch (error) {
             console.error("Erro no processo de login:", error);
-            alert("Erro ao realizar login com Google. Tente novamente.");
+            alert("Erro ao realizar login. Tente novamente.");
             resetBotao();
         }
     };
@@ -106,15 +106,6 @@
         btnText.innerText = "Entrar com Google";
         statusDiv.style.display = 'none';
     }
-
-    // DESATIVADO: Service Worker bloqueado para evitar interferência no redirecionamento/cache
-    /*
-    if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-            navigator.serviceWorker.register('/sw.js').catch(err => console.log('Erro SW', err));
-        });
-    }
-    */
 </script>
 
 </body>
