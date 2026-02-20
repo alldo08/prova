@@ -21,6 +21,7 @@ from firebase_admin import auth, credentials, firestore
 from pydantic import BaseModel
 import base64
 from starlette.middleware.sessions import SessionMiddleware # <--- Adicione esta linha
+from sqlalchemy import create_client, create_engine, text
 # 1. Tenta pegar o conteúdo da variável de ambiente que você criou no Render
 # Tenta o caminho padrão de segredos do Render primeiro
 # Se não encontrar, tenta na raiz do projeto
@@ -221,6 +222,10 @@ async def remover_permissao(request: Request):
 # =============================
 
 DATABASE_URL = os.getenv("DATABASE_URL").strip()
+if DATABASE_URL.startswith("postgres://"):
+    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
+
+engine = create_engine(DATABASE_URL)
 timezone_br = pytz.timezone("America/Sao_Paulo")
 
 # =============================
@@ -330,56 +335,63 @@ async def mostrar_perfil(request: Request):
 # Rota para buscar os dados do banco e mandar para o HTML
 @app.get("/obter-perfil")
 async def obter_perfil(request: Request):
-    try:
-        user_email = request.session.get("user_email")
-        if not user_email:
-            return {"error": "nao_logado"}, 401
-            
-        doc_ref = db.collection("usuarios_perfil").document(user_email)
-        doc = doc_ref.get()
+    user_email = request.session.get("user_email")
+    if not user_email:
+        return {}
+
+    with engine.connect() as conn:
+        query = text("SELECT nome, peso, altura, qualidades, foto FROM usuarios_perfil WHERE email = :email")
+        result = conn.execute(query, {"email": user_email}).fetchone()
         
-        if doc.exists:
-            return doc.to_dict()
-        return {} # Retorna vazio se não tiver perfil ainda
-    except Exception as e:
-        print(f"Erro no obter-perfil: {e}")
-        return {"detail": str(e)}, 500
+        if result:
+            return {
+                "nome": result[0],
+                "peso": result[1],
+                "altura": result[2],
+                "qualidades": result[3],
+                "foto": result[4]
+            }
+    return {}
 
 @app.post("/atualizar-perfil")
 async def atualizar_perfil(request: Request):
     try:
-        # 1. Pegar o email da sessão
         user_email = request.session.get("user_email")
-        
         if not user_email:
-            print("ERRO: Sessão não encontrada no servidor")
-            return {"status": "error", "detail": "Usuário não logado na sessão"}, 401
+            return {"status": "error", "detail": "Sessão expirada"}, 401
 
-        # 2. Receber os dados do HTML
         data = await request.json()
         
-        # 3. Montar o objeto para o Supabase
-        # Certifique-se que os nomes das colunas na sua tabela são iguais a estes
-        payload = {
-            "email": user_email,
-            "nome": data.get("nome"),
-            "peso": float(data.get("peso")) if data.get("peso") else 0,
-            "altura": int(data.get("altura")) if data.get("altura") else 0,
-            "qualidades": data.get("qualidades"),
-            "foto": data.get("foto")  # O Base64 da imagem
-        }
+        # Comando SQL para inserir ou atualizar (UPSERT)
+        query = text("""
+            INSERT INTO usuarios_perfil (email, nome, peso, altura, qualidades, foto)
+            VALUES (:email, :nome, :peso, :altura, :qualidades, :foto)
+            ON CONFLICT (email) 
+            DO UPDATE SET 
+                nome = EXCLUDED.nome,
+                peso = EXCLUDED.peso,
+                altura = EXCLUDED.altura,
+                qualidades = EXCLUDED.qualidades,
+                foto = EXCLUDED.foto;
+        """)
 
-        # 4. Salvar no Supabase (usando a sua variável 'supabase' configurada)
-        # O 'upsert' usa a coluna 'email' como chave única para saber se atualiza ou cria
-        resultado = supabase.table("usuarios_perfil").upsert(payload).execute()
+        with engine.connect() as conn:
+            conn.execute(query, {
+                "email": user_email,
+                "nome": data.get("nome"),
+                "peso": float(data.get("peso")) if data.get("peso") else 0,
+                "altura": int(data.get("altura")) if data.get("altura") else 0,
+                "qualidades": data.get("qualidades"),
+                "foto": data.get("foto")
+            })
+            conn.commit()
 
-        print(f"✅ SUCESSO NO SUPABASE PARA: {user_email}")
-        return {"status": "success", "data": resultado.data}
+        print(f"✅ Salvo com sucesso no Supabase via SQL: {user_email}")
+        return {"status": "success"}
 
     except Exception as e:
-        print(f"❌ ERRO CRÍTICO SUPABASE: {str(e)}")
+        print(f"❌ Erro no SQL: {str(e)}")
         return {"status": "error", "detail": str(e)}, 500
-
 #@app.middleware("http")
 #async def add_no_cache_headers(request: Request, call_next):
     #response = await call_next(request)
@@ -831,6 +843,7 @@ async def resultados_publicos(request: Request):
     </body>
     </html>
     """
+
 
 
 
