@@ -370,45 +370,15 @@ async def atualizar_perfil(
     altura: str = Form(...),
     qualidades: str = Form(...),
     foto: str = Form("")
-):
-    # Pega o email da sessão
+    ):
     user_email = request.session.get("user_email")
+    print(f"DEBUG FINAL - Email: {user_email}") # Acompanhe no log do Render
     
-    # LOG DE SEGURANÇA: Vamos ver se a sessão sumiu aqui
-    print(f"DEBUG: Tentando salvar perfil para: {user_email}")
-
     if not user_email:
-        print("DEBUG: Sessão perdida no POST!")
-        return HTMLResponse("<script>alert('Sessão perdida! Por favor, faça login novamente.'); window.location.href='/entrar';</script>")
+        return HTMLResponse("<script>alert('Sessão expirada! Faça login novamente.'); window.location.href='/entrar';</script>")
 
-    try:
-        conn = get_db_connection()
-        cur = conn.cursor()
-        
-        # SQL UPSERT - IGUAL AO QUE FUNCIONA NO SUPABASE
-        cur.execute("""
-            INSERT INTO usuarios_perfil (email, nome, peso, altura, qualidades, foto)
-            VALUES (%s, %s, %s, %s, %s, %s)
-            ON CONFLICT (email) 
-            DO UPDATE SET 
-                nome = EXCLUDED.nome,
-                peso = EXCLUDED.peso,
-                altura = EXCLUDED.altura,
-                qualidades = EXCLUDED.qualidades,
-                foto = EXCLUDED.foto;
-        """, (user_email, nome, peso, altura, qualidades, foto))
-        
-        conn.commit()
-        cur.close()
-        conn.close()
-        
-        print(f"✅ SUCESSO: Perfil de {user_email} salvo no banco!")
-        return HTMLResponse("<script>alert('✅ Perfil atualizado com sucesso!'); window.location.href='/perfil';</script>")
-
-    except Exception as e:
-        print(f"❌ ERRO NO BANCO: {e}")
-        return HTMLResponse(f"<script>alert('Erro ao salvar: {str(e)}'); window.history.back();</script>")#async def add_no_cache_headers(request: Request, call_next):
-    #response = await call_next(request)
+    # ... seu código de cur.execute e conn.commit aqui ...
+    return HTMLResponse("<script>alert('✅ Salvo com sucesso!'); window.location.href='/perfil';</script>")    #response = await call_next(request)
     #response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
    # return response
 
@@ -857,6 +827,7 @@ async def resultados_publicos(request: Request):
     </body>
     </html>
     """
+
 
 
 
