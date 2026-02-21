@@ -48,22 +48,72 @@
         </div>
     </main>
 
-    <script>
-        async function carregarDados() {
-            try {
-                // Busca dados do perfil para a foto lateral
-                const res = await fetch('/obter-perfil');
-                if (res.ok) {
-                    const d = await res.json();
-                    document.getElementById('userPhoto').src = d.foto || 'https://via.placeholder.com/120';
-                    document.getElementById('userName').innerText = d.nome || 'Usuário';
+    <script type="module">
+    // 1. Importações necessárias para o Firebase e Notificações
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+    import { getMessaging, getToken } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-messaging.js";
+
+    // 2. Sua configuração do Firebase (deve ser a mesma do entrar.html)
+    const firebaseConfig = {
+        apiKey: "IzaSyCGkSCkznXVBanRx5gDgeVSRS2mJU90UT8",
+        authDomain: "projeto-web-app-16adb.firebaseapp.com",
+        projectId: "projeto-web-app-16adb",
+        storageBucket: "projeto-web-app-16adb.firebasestorage.app",
+        messagingSenderId: "1011089630045",
+        appId: "1:1011089630045:web:3afc16a9817f11409c7eb4",
+        measurementId: "G-12TW5Q57JE"
+    };
+
+    // 3. Inicialização
+    const app = initializeApp(firebaseConfig);
+
+    async function carregarDados() {
+        try {
+            // --- PARTE 1: Dados do Perfil ---
+            const res = await fetch('/obter-perfil');
+            if (res.ok) {
+                const d = await res.json();
+                document.getElementById('userPhoto').src = d.foto || 'https://via.placeholder.com/120';
+                document.getElementById('userName').innerText = d.nome || 'Usuário';
+            }
+
+            // --- PARTE 2: Notificações (Preparação) ---
+            // Só tentamos pegar o token se o navegador suportar notificações
+            if ('Notification' in window) {
+                const permission = await Notification.requestPermission();
+                if (permission === 'granted') {
+                    const messaging = getMessaging(app);
+                    
+                    // Substitua 'SUA_CHAVE_PUBLICA' pela sua chave VAPID do console do Firebase
+                    // Se não tiver a chave agora, você pode comentar as linhas abaixo
+                    /*
+                    const token = await getToken(messaging, { vapidKey: 'SUA_CHAVE_PUBLICA' });
+                    if (token) {
+                        console.log("Token de notificação gerado:", token);
+                        // Aqui você faria um fetch para salvar o token no seu Python
+                    }
+                    */
                 }
-            } catch (e) { console.error(e); }
+            }
+
+        } catch (e) { 
+            console.error("Erro ao carregar dados da página:", e); 
         }
-        carregarDados();
-        const messaging = getMessaging(app);
-        const token = await getToken(messaging, { vapidKey: 'SUA_CHAVE_PUBLICA' });
-        // Envie este 'token' para o seu Python salvar no banco junto com o e-mail do usuário
-    </script>
+    }
+
+    // Executa a função principal
+    carregarDados();
+
+    // Função de Logout (caso precise para o botão sair desta página)
+    window.fazerLogout = async function() {
+        if (!confirm("Deseja realmente sair?")) return;
+        try {
+            await fetch('/logout', { method: 'POST' });
+            window.location.href = "/entrar";
+        } catch (e) {
+            window.location.href = "/entrar";
+        }
+    };
+</script>
 </body>
 </html>
