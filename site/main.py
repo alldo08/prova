@@ -156,7 +156,11 @@ async def auth_callback(request: Request):
     except Exception as e:
         print(f"Erro na autenticação: {e}")
         return JSONResponse({"status": "error", "message": str(e)}, status_code=401)#logout#
-
+#
+@app.get("/firebase-messaging-sw.js")
+async def get_sw():
+    return FileResponse("static/firebase-messaging-sw.js", media_type="application/javascript")
+ #logout   
 @app.post("/logout")
 async def logout(request: Request):
     request.session.clear()  # Destrói a sessão no servidor
@@ -919,6 +923,7 @@ async def resultados_publicos(request: Request):
     </body>
     </html>
     """
+
 
 
 
