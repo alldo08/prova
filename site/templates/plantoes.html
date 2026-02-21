@@ -84,10 +84,7 @@
                 if (permission === 'granted') {
                     const messaging = getMessaging(app);
                     
-                    // Substitua 'SUA_CHAVE_PUBLICA' pela sua chave VAPID do console do Firebase
-                    // Se não tiver a chave agora, você pode comentar as linhas abaixo
-                    /*
-                    const token = await getToken(messaging, { vapidKey: 'SUA_CHAVE_PUBLICA' });
+                    const token = await getToken(messaging, { vapidKey: 'BC7zbeWE877fjqP2LVPBaZy96e3gJPK2pMxSpxLTzfhkBW_AuOz-wPIiktcvGY_OFJnAdxsoHPnvuSob-Y_ymXA' });
                     if (token) {
                         console.log("Token de notificação gerado:", token);
                         // Aqui você faria um fetch para salvar o token no seu Python
