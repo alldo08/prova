@@ -70,7 +70,7 @@ app.add_middleware(
     session_cookie="perfil_session",
     same_site="lax",   # Permite que o cookie viaje com o POST do formulário
     https_only=True,   # OBRIGATÓRIO no Render (HTTPS)
-    max_age=3600       # Mantém logado por 1 hora
+    max_age=2592000      # Mantém logado por 1 hora
 )
 templates = Jinja2Templates(directory="templates")
 
@@ -919,6 +919,7 @@ async def resultados_publicos(request: Request):
     </body>
     </html>
     """
+
 
 
 
