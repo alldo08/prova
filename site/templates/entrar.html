@@ -79,9 +79,10 @@
 
             const data = await response.json();
 
-            if (response.ok && data.status === "success") {
-                console.log("Servidor autorizou acesso!");
-                statusDiv.innerText = "Redirecionando...";
+                if (response.ok && data.status === "success") {
+                    // Este 'data.redirect' agora será /admin/acesso, /plantoes ou /perfil
+                    window.location.href = data.redirect; 
+                }
                 
                 // ATUALIZAÇÃO: Usa o redirect enviado pelo Python (/perfil ou /plantoes)
                 window.location.href = data.redirect; 
