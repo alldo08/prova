@@ -66,7 +66,7 @@ db = firestore.client()
 app = FastAPI()
 app.add_middleware(
     SessionMiddleware, 
-    secret_key="UMA_CHAVE_FIXA_MUITO_LONGA_AQUI", # Use algo fixo e não mude mais
+    secret_key="SUA_CHAVE_PUBLICA", # Use algo fixo e não mude mais
     session_cookie="perfil_session",
     same_site="lax",   # Permite que o cookie viaje com o POST do formulário
     https_only=True,   # OBRIGATÓRIO no Render (HTTPS)
@@ -919,6 +919,7 @@ async def resultados_publicos(request: Request):
     </body>
     </html>
     """
+
 
 
 
