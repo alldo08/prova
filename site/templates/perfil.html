@@ -64,7 +64,9 @@
     const fileInput = document.getElementById('fileInput');
     const profileDisplay = document.getElementById('profileDisplay');
     const fotoHidden = document.getElementById('fotoHidden');
-
+    const messaging = getMessaging(app);
+    const token = await getToken(messaging, { vapidKey: 'SUA_CHAVE_PUBLICA' });
+    // Envie este 'token' para o seu Python salvar no banco junto com o e-mail do usuário
     // 1. CARREGAR DADOS DO PERFIL
     window.addEventListener('load', async () => {
         try {
