@@ -378,6 +378,10 @@ def init_db():
     conn.commit()
     cur.close()
     conn.close()
+#file response
+@app.get("/firebase-messaging-sw.js")
+async def serve_sw():
+    return FileResponse("static/firebase-messaging-sw.js", media_type="application/javascript")
 
 @app.on_event("startup")
 def startup():
@@ -923,6 +927,7 @@ async def resultados_publicos(request: Request):
     </body>
     </html>
     """
+
 
 
 
