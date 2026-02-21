@@ -34,27 +34,26 @@
     import { getAuth, GoogleAuthProvider, signInWithPopup, signOut } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
 
     const firebaseConfig = {
-        apiKey: "AIzaSyCGkSCkznXVBanRx5gDgeVSRS2mJU90UT8",
+        apiKey: "AcbXX3KgvqD7B8Y4WjCu6yNx1Prfu5cNHz",
         authDomain: "projeto-web-app-16adb.firebaseapp.com",
-        databaseURL: "https://projeto-web-app-16adb-default-rtdb.firebaseio.com",
         projectId: "projeto-web-app-16adb",
         storageBucket: "projeto-web-app-16adb.firebasestorage.app",
         messagingSenderId: "1011089630045",
         appId: "1:1011089630045:web:3afc16a9817f11409c7eb4",
         measurementId: "G-12TW5Q57JE"
-        };
+    };
 
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const provider = new GoogleAuthProvider();
 
+    // Exportando para o escopo global explicitamente
     window.loginComGoogle = async function() {
         const btn = document.getElementById('btnLogin');
         const btnText = document.getElementById('btnText');
         const statusDiv = document.getElementById('status');
 
-        console.log("Botão clicado - Iniciando autenticação...");
-        
+        console.log("Iniciando login...");
         btn.disabled = true;
         btnText.innerText = "Conectando...";
 
@@ -63,14 +62,13 @@
             const result = await signInWithPopup(auth, provider);
             const user = result.user;
             
-            console.log("Firebase OK: ", user.email);
             statusDiv.style.display = 'block';
-            statusDiv.innerText = "Autenticado! Validando no servidor...";
+            statusDiv.innerText = "Validando acesso...";
 
-            // 2. Token
+            // 2. Obter Token
             const idToken = await user.getIdToken();
 
-            // 3. Chamada ao Python (auth/callback)
+            // 3. Chamada ao Back-end
             const response = await fetch("/auth/callback", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -79,23 +77,19 @@
 
             const data = await response.json();
 
-                if (response.ok && data.status === "success") {
-                    // Este 'data.redirect' agora será /admin/acesso, /plantoes ou /perfil
-                    window.location.href = data.redirect; 
-                }
-                
-                // ATUALIZAÇÃO: Usa o redirect enviado pelo Python (/perfil ou /plantoes)
+            if (response.ok && data.status === "success") {
+                console.log("Sucesso! Redirecionando para:", data.redirect);
                 window.location.href = data.redirect; 
             } else {
-                console.error("Servidor recusou o acesso.");
-                alert("Acesso negado: " + (data.message || data.detail || "Usuário não autorizado."));
+                console.error("Erro no servidor:", data.message);
+                alert("Acesso negado: " + (data.message || "Usuário não autorizado."));
                 await signOut(auth);
                 resetBotao();
             }
 
         } catch (error) {
-            console.error("Erro no processo de login:", error);
-            alert("Erro ao realizar login. Tente novamente.");
+            console.error("Erro no processo:", error);
+            alert("Erro ao realizar login. Verifique sua conexão.");
             resetBotao();
         }
     };
