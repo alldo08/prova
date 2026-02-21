@@ -172,28 +172,34 @@ async def pag_plantoes(request: Request, response: Response):
     with open("templates/plantoes.html", "r", encoding="utf-8") as f:
         return f.read()
 #acesso
-@app.get("/admin/acessos", response_class=HTMLResponse)
-async def pag_admin_acesso(request: Request):
+        
+@app.get("/admin/acesso", response_class=HTMLResponse)
+async def pag_admin_acesso(request: Request, response: Response): # <--- Adicione 'response' aqui
     user_email = request.session.get("user_email")
     
-    # 1. Verifica se está logado
-    if not user_email:
+    # 1. Trava de Segurança
+    if not user_email or user_email != "chasealdorobert@gmail.com":
         return RedirectResponse(url="/entrar")
 
-    # 2. Verifica se é o admin específico
-    # Você pode fazer isso consultando o Firestore ou deixando fixo no código:
-    admins_autorizados = ["chasealdorobert@gmail.com"] # Adicione outros se precisar
+    # 2. ONDE COLOCAR O CACHE-CONTROL:
+    # Deve vir logo antes de retornar o HTML, para garantir que a resposta saia com a trava
+    response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
     
-    if user_email not in admins_autorizados:
-        print(f"🚫 Tentativa de acesso negada: {user_email}")
-        return HTMLResponse("<h3>Erro: Você não tem privilégios de administrador.</h3>", status_code=403)
-
-    # 3. Se passou nas travas, carrega a página
+    # 3. Solução do Erro de Arquivo
     try:
-        with open("templates/gestao_acessos", "r", encoding="utf-8") as f:
+        # Tente usar o caminho relativo simples
+        with open("templates/gestao_acessos.html", "r", encoding="utf-8") as f:
             return f.read()
-    except:
-        return "Arquivo gestao_acessos.html não encontrado."
+    except FileNotFoundError:
+        # Se falhar, vamos tentar o caminho absoluto (comum em servidores Linux/Render)
+        import os
+        caminho_base = os.path.dirname(__file__)
+        caminho_arquivo = os.path.join(caminho_base, "templates", "gestao_acessos.html")
+        try:
+            with open(caminho_arquivo, "r", encoding="utf-8") as f:
+                return f.read()
+        except:
+            return f"❌ Erro: O arquivo 'gestao_acessos.html' não existe na pasta templates. Verifique se o nome está idêntico (letras minúsculas/maiúsculas)."
 
 #@app.get("/perfil")
 #async def pagina_perfil(request: Request):
@@ -888,6 +894,7 @@ async def resultados_publicos(request: Request):
     </body>
     </html>
     """
+
 
 
 
