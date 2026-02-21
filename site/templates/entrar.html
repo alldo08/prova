@@ -31,7 +31,15 @@
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
-    import { getAuth, GoogleAuthProvider, signInWithPopup, signOut } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
+    import { 
+        getAuth, 
+        GoogleAuthProvider, 
+        signInWithPopup, 
+        signOut, 
+        setPersistence, 
+        browserLocalPersistence,
+        onAuthStateChanged 
+    } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
 
     const firebaseConfig = {
         apiKey: "AIzaSyCGkSCkznXVBanRx5gDgeVSRS2mJU90UT8",
@@ -42,34 +50,58 @@
         messagingSenderId: "1011089630045",
         appId: "1:1011089630045:web:3afc16a9817f11409c7eb4",
         measurementId: "G-12TW5Q57JE"
-    };
+        };
 
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const provider = new GoogleAuthProvider();
 
-    // Exportando para o escopo global explicitamente
+    // 1. Verificar se o usuário já tem uma sessão ativa ao carregar a página
+    onAuthStateChanged(auth, async (user) => {
+        if (user) {
+            console.log("Usuário já logado detectado:", user.email);
+            // Se já está logado no Firebase, tenta validar no servidor automaticamente
+            validarNoServidor(user);
+        }
+    });
+
+    // 2. Função de Login principal
     window.loginComGoogle = async function() {
         const btn = document.getElementById('btnLogin');
         const btnText = document.getElementById('btnText');
-        const statusDiv = document.getElementById('status');
 
-        console.log("Iniciando login...");
         btn.disabled = true;
         btnText.innerText = "Conectando...";
 
         try {
-            // 1. Firebase Popup
-            const result = await signInWithPopup(auth, provider);
-            const user = result.user;
+            // Define a persistência como LOCAL (sobrevive ao fechamento da aba/janela)
+            await setPersistence(auth, browserLocalPersistence);
             
-            statusDiv.style.display = 'block';
-            statusDiv.innerText = "Validando acesso...";
+            // Abre o popup
+            const result = await signInWithPopup(auth, provider);
+            await validarNoServidor(result.user);
 
-            // 2. Obter Token
+        } catch (error) {
+            console.error("Erro no processo:", error);
+            alert("Erro ao realizar login. Tente novamente.");
+            resetBotao();
+        }
+    };
+
+    // 3. Função para validar o token com o seu Python (main.py)
+    async function validarNoServidor(user) {
+        const statusDiv = document.getElementById('status');
+        const btn = document.getElementById('btnLogin');
+        const btnText = document.getElementById('btnText');
+
+        btn.disabled = true;
+        btnText.innerText = "Validando...";
+        statusDiv.style.display = 'block';
+        statusDiv.innerText = "Autenticando no portal...";
+
+        try {
             const idToken = await user.getIdToken();
 
-            // 3. Chamada ao Back-end
             const response = await fetch("/auth/callback", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -87,13 +119,11 @@
                 await signOut(auth);
                 resetBotao();
             }
-
         } catch (error) {
-            console.error("Erro no processo:", error);
-            alert("Erro ao realizar login. Verifique sua conexão.");
+            console.error("Erro na comunicação com o servidor:", error);
             resetBotao();
         }
-    };
+    }
 
     function resetBotao() {
         const btn = document.getElementById('btnLogin');
