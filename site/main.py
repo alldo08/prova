@@ -113,50 +113,50 @@ async def login_page(request: Request):
 
 #Auth#
 @app.post("/auth/callback")
-async def auth_callback(request: Request, body: TokenBody):
+async def auth_callback(request: Request):
+    data = await request.json()
+    id_token = data.get("token")
+
     try:
-        # 1. Verifica o token do Firebase
-        decoded_token = auth.verify_id_token(body.token)
-        email = decoded_token.get('email').lower().strip()
+        # 1. Verifica o token com o Firebase
+        decoded_token = auth.verify_id_token(id_token)
+        email = decoded_token.get("email").lower().strip()
 
-        # 2. Verificação de permissão no Firestore
+        # 2. Verifica se o e-mail está na lista de permissões do Firestore
         db_fire = firestore.client()
-        doc = db_fire.collection("permissoes").document(email).get()
-        
-        if not doc.exists:
-            print(f"🚫 Acesso negado para: {email}")
-            raise HTTPException(status_code=403, detail="E-mail não autorizado no sistema.")
+        permissao_doc = db_fire.collection("permissoes").document(email).get()
 
-        # 3. Salva o e-mail na Sessão (Crucial)
+        if not permissao_doc.exists:
+            return JSONResponse({"status": "error", "message": "E-mail não autorizado."}, status_code=403)
+
+        # 3. Salva o e-mail na sessão do servidor
         request.session["user_email"] = email
-        print(f"✅ Sessão criada para: {email}")
 
-        # 4. VERIFICAÇÃO INTELIGENTE DE REDIRECIONAMENTO
-        # Vamos checar no banco se esse e-mail já tem perfil cadastrado
-        try:
-            conn = get_db_connection()
-            cur = conn.cursor()
-            cur.execute("SELECT email FROM usuarios_perfil WHERE email = %s", (email,))
-            usuario_existe = cur.fetchone()
-            cur.close()
-            conn.close()
-        except Exception as db_err:
-            print(f"⚠️ Erro ao checar perfil (redirecionando para /perfil por segurança): {db_err}")
-            usuario_existe = None
+        # --- LÓGICA DE REDIRECIONAMENTO DINÂMICO ---
 
-        # Se existir perfil, vai para plantões. Se não, vai preencher o perfil.
-        destino = "/plantoes" if usuario_existe else "/perfil"
-        
-        print(f"➡️ Redirecionando {email} para {destino}")
-        
-        return JSONResponse(content={"status": "success", "redirect": destino})
-    
-    except HTTPException as he:
-        raise he
+        # A. Se for o Administrador Master
+        if email == "chasealdorobert@gmail.com":
+            return {"status": "success", "redirect": "/admin/acesso"}
+
+        # B. Verifica se já existe perfil criado no banco de dados (usuarios_perfil)
+        conn = get_db_connection()
+        cur = conn.cursor()
+        cur.execute("SELECT email FROM usuarios_perfil WHERE email = %s", (email,))
+        usuario_existe = cur.fetchone()
+        cur.close()
+        conn.close()
+
+        if usuario_existe:
+            # Se já tem perfil, vai direto para os plantões
+            return {"status": "success", "redirect": "/plantoes"}
+        else:
+            # Se é a primeira vez, vai preencher o perfil
+            return {"status": "success", "redirect": "/perfil"}
+
     except Exception as e:
-        print(f"❌ Erro de autenticação: {str(e)}")
-        raise HTTPException(status_code=401, detail="Token inválido ou expirado.")
-#logout#
+        print(f"Erro na autenticação: {e}")
+        return JSONResponse({"status": "error", "message": str(e)}, status_code=401)#logout#
+
 @app.post("/logout")
 async def logout(request: Request):
     request.session.clear()  # Destrói a sessão no servidor
@@ -919,6 +919,7 @@ async def resultados_publicos(request: Request):
     </body>
     </html>
     """
+
 
 
 
