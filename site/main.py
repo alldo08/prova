@@ -172,7 +172,7 @@ async def pag_plantoes(request: Request, response: Response):
     with open("templates/plantoes.html", "r", encoding="utf-8") as f:
         return f.read()
 #acesso
-@app.get("/admin/acesso", response_class=HTMLResponse)
+@app.get("/admin/acessos", response_class=HTMLResponse)
 async def pag_admin_acesso(request: Request):
     user_email = request.session.get("user_email")
     
@@ -190,10 +190,11 @@ async def pag_admin_acesso(request: Request):
 
     # 3. Se passou nas travas, carrega a página
     try:
-        with open("templates/gestao_acesso", "r", encoding="utf-8") as f:
+        with open("templates/gestao_acessos", "r", encoding="utf-8") as f:
             return f.read()
     except:
-        return "Arquivo gestao_acesso.html não encontrado."
+        return "Arquivo gestao_acessos.html não encontrado."
+
 #@app.get("/perfil")
 #async def pagina_perfil(request: Request):
     # Pega o cookie sem disparar erro automático
@@ -887,6 +888,7 @@ async def resultados_publicos(request: Request):
     </body>
     </html>
     """
+
 
 
 
