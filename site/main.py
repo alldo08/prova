@@ -171,6 +171,31 @@ async def pag_plantoes(request: Request, response: Response):
     response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
     with open("templates/plantoes.html", "r", encoding="utf-8") as f:
         return f.read()
+#outros
+@app.get("/admin/listar-permissoes")
+async def listar_permissoes(request: Request):
+    # Proteção: só admin acessa os dados
+    user_email = request.session.get("user_email")
+    if user_email != "chasealdorobert@gmail.com":
+        raise HTTPException(status_code=403)
+
+    try:
+        db_fire = firestore.client()
+        docs = db_fire.collection("permissoes").stream()
+        
+        lista_emails = []
+        for doc in docs:
+            # Pegamos o ID do documento (que é o e-mail) e os dados dentro dele
+            dados = doc.to_dict()
+            lista_emails.append({
+                "email": doc.id,
+                "role": dados.get("role", "usuario")
+            })
+        
+        return JSONResponse(content=lista_emails)
+    except Exception as e:
+        print(f"Erro ao listar e-mails: {e}")
+        return JSONResponse(content=[], status_code=500)
 #acesso
         
 @app.get("/admin/acesso", response_class=HTMLResponse)
@@ -894,6 +919,7 @@ async def resultados_publicos(request: Request):
     </body>
     </html>
     """
+
 
 
 
