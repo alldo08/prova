@@ -172,25 +172,28 @@ async def pag_plantoes(request: Request, response: Response):
     with open("templates/plantoes.html", "r", encoding="utf-8") as f:
         return f.read()
 #acesso
-@app.get("/admin/acessos")
-async def pagina_gestao_acessos(request: Request):
-    # Pega o e-mail do cookie e limpa espaços/letras grandes
-    user_admin = request.cookies.get("session_user", "").strip().lower()
+@app.get("/admin/acesso", response_class=HTMLResponse)
+async def pag_admin_acesso(request: Request):
+    user_email = request.session.get("user_email")
     
-    # Coloque o seu e-mail EXATAMENTE assim: todo em minúsculo
-    EMAIL_DONO = "chasealdorobert@gmail.com" 
+    # 1. Verifica se está logado
+    if not user_email:
+        return RedirectResponse(url="/entrar")
 
-    if user_admin != EMAIL_DONO:
-        print(f"Tentativa de admin negada para: {user_admin}") # Isso aparecerá no log do Render
-        # O status_code=303 força o navegador a mudar de página
-        return RedirectResponse(url="/perfil?erro=privilegio", status_code=303)
+    # 2. Verifica se é o admin específico
+    # Você pode fazer isso consultando o Firestore ou deixando fixo no código:
+    admins_autorizados = ["chasealdorobert@gmail.com"] # Adicione outros se precisar
+    
+    if user_email not in admins_autorizados:
+        print(f"🚫 Tentativa de acesso negada: {user_email}")
+        return HTMLResponse("<h3>Erro: Você não tem privilégios de administrador.</h3>", status_code=403)
 
-    db = firestore.client()
-    docs = db.collection("permissoes").stream()
-    usuarios = [{"email": doc.id} for doc in docs]
-
-    return templates.TemplateResponse("gestao_acessos.html", {"request": request, "usuarios": usuarios})
-
+    # 3. Se passou nas travas, carrega a página
+    try:
+        with open("templates/admin_acesso.html", "r", encoding="utf-8") as f:
+            return f.read()
+    except:
+        return "Arquivo admin_acesso.html não encontrado."
 #@app.get("/perfil")
 #async def pagina_perfil(request: Request):
     # Pega o cookie sem disparar erro automático
@@ -884,6 +887,7 @@ async def resultados_publicos(request: Request):
     </body>
     </html>
     """
+
 
 
 
