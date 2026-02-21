@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Plantões Disponíveis</title>
+    <title>Plantões Disponíveis - Santer Saúde</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         :root { --primary: #1abc9c; --dark: #2c3e50; --bg: #f4f7f6; }
@@ -12,7 +12,9 @@
         /* Sidebar da Foto */
         .sidebar { width: 250px; background: white; height: 100vh; position: fixed; display: flex; flex-direction: column; align-items: center; padding-top: 40px; box-shadow: 2px 0 10px rgba(0,0,0,0.05); }
         .profile-img { width: 120px; height: 120px; border-radius: 50%; object-fit: cover; border: 4px solid var(--primary); margin-bottom: 15px; }
-        .user-name { font-weight: bold; color: var(--dark); margin-bottom: 20px; }
+        .user-name { font-weight: bold; color: var(--dark); margin-bottom: 20px; text-align: center; padding: 0 10px; }
+        .sidebar a { text-decoration: none; color: var(--dark); font-size: 14px; margin-bottom: 10px; transition: color 0.3s; }
+        .sidebar a:hover { color: var(--primary); }
 
         /* Área Central */
         .main-content { margin-left: 250px; flex-grow: 1; padding: 40px; }
@@ -30,9 +32,10 @@
 <body>
 
     <aside class="sidebar">
-        <img src="" id="userPhoto" class="profile-img" alt="Foto">
+        <img src="https://via.placeholder.com/120" id="userPhoto" class="profile-img" alt="Foto">
         <span id="userName" class="user-name">Carregando...</span>
-        <a href="/perfil"><i class="fas fa-edit"></i> Editar Perfil</a>    
+        <a href="/perfil"><i class="fas fa-user-edit"></i> Editar Perfil</a>
+        <a href="#" onclick="fazerLogout()"><i class="fas fa-sign-out-alt"></i> Sair</a>
     </aside>
 
     <main class="main-content">
@@ -49,11 +52,9 @@
     </main>
 
     <script type="module">
-    // 1. Importações necessárias para o Firebase e Notificações
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
-    import { getMessaging, getToken } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-messaging.js";
+    import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-messaging.js";
 
-    // 2. Sua configuração do Firebase (deve ser a mesma do entrar.html)
     const firebaseConfig = {
         apiKey: "IzaSyCGkSCkznXVBanRx5gDgeVSRS2mJU90UT8",
         authDomain: "projeto-web-app-16adb.firebaseapp.com",
@@ -64,12 +65,11 @@
         measurementId: "G-12TW5Q57JE"
     };
 
-    // 3. Inicialização
     const app = initializeApp(firebaseConfig);
 
     async function carregarDados() {
         try {
-            // --- PARTE 1: Dados do Perfil ---
+            // 1. Carregar dados do perfil (Foto e Nome)
             const res = await fetch('/obter-perfil');
             if (res.ok) {
                 const d = await res.json();
@@ -77,39 +77,59 @@
                 document.getElementById('userName').innerText = d.nome || 'Usuário';
             }
 
-            // --- PARTE 2: Notificações (Preparação) ---
-            // Só tentamos pegar o token se o navegador suportar notificações
-            if ('Notification' in window) {
+            // 2. Sistema de Notificações Push
+            if ('serviceWorker' in navigator) {
+                const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
+                console.log('Service Worker ativo!');
+
                 const permission = await Notification.requestPermission();
+                
                 if (permission === 'granted') {
                     const messaging = getMessaging(app);
-                    
-                    const token = await getToken(messaging, { vapidKey: 'BC7zbeWE877fjqP2LVPBaZy96e3gJPK2pMxSpxLTzfhkBW_AuOz-wPIiktcvGY_OFJnAdxsoHPnvuSob-Y_ymXA' });
-                    if (token) {
-                        console.log("Token de notificação gerado:", token);
-                        // Aqui você faria um fetch para salvar o token no seu Python
+
+                    // --- ATENÇÃO: COLOQUE SUA CHAVE VAPID AQUI ---
+                    const minhaChaveVapid = "BC7zbeWE877fjqP2LVPBaZy96e3gJPK2pMxSpxLTzfhkBW_AuOz-wPIiktcvGY_OFJnAdxsoHPnvuSob-Y_ymXA"; 
+
+                    if (minhaChaveVapid !== "BC7zbeWE877fjqP2LVPBaZy96e3gJPK2pMxSpxLTzfhkBW_AuOz-wPIiktcvGY_OFJnAdxsoHPnvuSob-Y_ymXA") {
+                        const token = await getToken(messaging, { 
+                            serviceWorkerRegistration: registration,
+                            vapidKey: minhaChaveVapid 
+                        });
+
+                        if (token) {
+                            console.log("SUCESSO! Token gerado:", token);
+                            // Enviar token ao servidor se necessário
+                        }
+                    } else {
+                        console.warn("Chave VAPID não configurada.");
                     }
+
+                    // Ouvir mensagens com a página aberta
+                    onMessage(messaging, (payload) => {
+                        console.log('Mensagem recebida:', payload);
+                        alert(`Notificação: ${payload.notification.title}\n${payload.notification.body}`);
+                    });
                 }
             }
-
-        } catch (e) { 
-            console.error("Erro ao carregar dados da página:", e); 
+        } catch (e) {
+            console.error("Erro ao carregar dados:", e);
         }
     }
 
-    // Executa a função principal
+    // Inicializa a página
     carregarDados();
 
-    // Função de Logout (caso precise para o botão sair desta página)
+    // Função de Logout
     window.fazerLogout = async function() {
         if (!confirm("Deseja realmente sair?")) return;
         try {
+            // Chamada ao backend para limpar sessão
             await fetch('/logout', { method: 'POST' });
             window.location.href = "/entrar";
         } catch (e) {
             window.location.href = "/entrar";
         }
     };
-</script>
+    </script>
 </body>
 </html>
