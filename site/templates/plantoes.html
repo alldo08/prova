@@ -66,7 +66,7 @@
     };
 
     const app = initializeApp(firebaseConfig);
-
+    const messaging = getMessaging(app);
     async function carregarDados() {
         try {
             // 1. Carregar dados do perfil (Foto e Nome)
@@ -78,43 +78,40 @@
             }
 
             // 2. Sistema de Notificações Push
-            if ('serviceWorker' in navigator) {
-                const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
-                console.log('Service Worker ativo!');
+           if ('serviceWorker' in navigator) {
+            const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
+            console.log('Service Worker ativo!');
 
-                const permission = await Notification.requestPermission();
-                
-                if (permission === 'granted') {
-                    const messaging = getMessaging(app);
+            const permission = await Notification.requestPermission();
+            
+            if (permission === 'granted') {
+                // SUBSTITUA PELA SUA CHAVE ABAIXO:
+                const minhaChaveVapid = "BC7zbeWE877fjqP2LVPBaZy96e3gJPK2pMxSpxLTzfhkBW_AuOz-wPIiktcvGY_OFJnAdxsoHPnvuSob-Y_ymXA"; 
 
-                    // --- ATENÇÃO: COLOQUE SUA CHAVE VAPID AQUI ---
-                    const minhaChaveVapid = "BC7zbeWE877fjqP2LVPBaZy96e3gJPK2pMxSpxLTzfhkBW_AuOz-wPIiktcvGY_OFJnAdxsoHPnvuSob-Y_ymXA"; 
-
-                    if (minhaChaveVapid !== "BC7zbeWE877fjqP2LVPBaZy96e3gJPK2pMxSpxLTzfhkBW_AuOz-wPIiktcvGY_OFJnAdxsoHPnvuSob-Y_ymXA" {
-                        const token = await getToken(messaging, { 
-                            serviceWorkerRegistration: registration,
-                            vapidKey: minhaChaveVapid 
-                        });
-
-                        if (token) {
-                            console.log("SUCESSO! Token gerado:", token);
-                            // Enviar token ao servidor se necessário
-                        }
-                    } else {
-                        console.warn("Chave VAPID não configurada.");
-                    }
-
-                    // Ouvir mensagens com a página aberta
-                    onMessage(messaging, (payload) => {
-                        console.log('Mensagem recebida:', payload);
-                        alert(`Notificação: ${payload.notification.title}\n${payload.notification.body}`);
+                if (minhaChaveVapid !== "BC7zbeWE877fjqP2LVPBaZy96e3gJPK2pMxSpxLTzfhkBW_AuOz-wPIiktcvGY_OFJnAdxsoHPnvuSob-Y_ymXA") {
+                    const token = await getToken(messaging, { 
+                        serviceWorkerRegistration: registration,
+                        vapidKey: minhaChaveVapid 
                     });
+
+                    if (token) {
+                        console.log("SUCESSO! Token gerado:", token);
+                    }
+                } else {
+                    console.warn("Aguardando configuração da Chave VAPID no código.");
                 }
+
+                // Ouvir mensagens com o site aberto
+                onMessage(messaging, (payload) => {
+                    console.log('Notificação recebida:', payload);
+                    alert(`📢 ${payload.notification.title}\n${payload.notification.body}`);
+                });
             }
-        } catch (e) {
-            console.error("Erro ao carregar dados:", e);
         }
+    } catch (e) {
+        console.error("Erro ao carregar dados:", e);
     }
+}
 
     // Inicializa a página
     carregarDados();
