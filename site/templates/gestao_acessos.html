@@ -80,31 +80,35 @@
         .user-list {
             border-top: 1px solid #eee;
             margin-top: 10px;
+            max-height: 400px;
+            overflow-y: auto;
         }
 
         .user-item {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 15px 0;
+            padding: 12px 0;
             border-bottom: 1px solid #f1f1f1;
         }
 
         .user-email {
-            font-size: 15px;
+            font-size: 14px;
             font-weight: 500;
             color: #202124;
+            word-break: break-all;
         }
 
         .btn-remove {
             background: transparent;
             color: var(--danger);
             border: 1px solid #f8d7da;
-            padding: 8px 12px;
+            padding: 6px 10px;
             border-radius: 8px;
             cursor: pointer;
-            font-size: 13px;
+            font-size: 12px;
             transition: all 0.2s;
+            margin-left: 10px;
         }
 
         .btn-remove:hover { background: #fce8e6; }
@@ -124,7 +128,7 @@
             justify-content: center;
             gap: 8px;
             transition: background 0.2s;
-            margin-top: 10px;
+            margin-top: 20px;
         }
 
         .btn-logout:hover { background: #fff5f5; }
@@ -151,28 +155,21 @@
 
     <div class="form-group">
         <input type="email" id="emailInput" placeholder="Ex: nome@gmail.com" required>
-        <button class="btn-add" onclick="adicionar()">
+        <button class="btn-add" id="btnAdd" onclick="adicionar()">
             <i class="fas fa-plus"></i>
         </button>
     </div>
 
-    <div class="user-list">
-        {% for user in usuarios %}
-        <div class="user-item">
-            <span class="user-email">{{ user.email }}</span>
-            <button class="btn-remove" onclick="remover('{{ user.email }}')">
-                <i class="fas fa-trash-can"></i>
-            </button>
-        </div>
-        {% endfor %}
+    <div class="user-list" id="listaEmails">
+        <p style="text-align: center; color: #777;">Carregando acessos...</p>
     </div>
 
     <button class="btn-logout" onclick="fazerLogout()">
         <i class="fas fa-sign-out-alt"></i> Sair da Conta
     </button>
     
-    <a href="/admin" class="back-link">
-        <i class="fas fa-arrow-left"></i> Voltar ao Painel
+    <a href="/plantoes" class="back-link">
+        <i class="fas fa-arrow-left"></i> Voltar aos Plantões
     </a>
 </div>
 
@@ -180,9 +177,8 @@
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
     import { getAuth, signOut } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
 
-    // Apenas inicialize se precisar usar auth no front para o logout
     const firebaseConfig = {
-        apiKey: "AIzaSyCGkSCkznXVBanRx5gDgeVSRS2mJU90UT8",
+        apiKey: "AcbXX3KgvqD7B8Y4WjCu6yNx1Prfu5cNHz",
         authDomain: "projeto-web-app-16adb.firebaseapp.com",
         projectId: "projeto-web-app-16adb"
     };
@@ -190,7 +186,7 @@
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
 
-// 1. CARREGAR LISTA AO INICIAR
+    // 1. CARREGAR LISTA AO INICIAR
     async function carregarEmails() {
         const listaDiv = document.getElementById('listaEmails');
         
@@ -220,11 +216,16 @@
         } catch (error) {
             listaDiv.innerHTML = '<p style="color: red; text-align: center;">Erro ao carregar lista.</p>';
         }
-    }    
-    // FUNÇÃO ADICIONAR
+    }
+
+    // 2. FUNÇÃO ADICIONAR
     window.adicionar = async function() {
-        const email = document.getElementById('emailInput').value.trim().toLowerCase();
-        if (!email) return alert("Digite um e-mail válido.");
+        const input = document.getElementById('emailInput');
+        const email = input.value.trim().toLowerCase();
+        
+        if (!email || !email.includes('@')) return alert("Digite um e-mail válido.");
+
+        document.getElementById('btnAdd').disabled = true;
 
         try {
             const response = await fetch('/admin/adicionar', {
@@ -233,45 +234,50 @@
                 body: JSON.stringify({ email: email })
             });
 
-            if (response.ok) location.reload();
-            else alert("Erro ao adicionar e-mail.");
+            if (response.ok) {
+                input.value = '';
+                carregarEmails(); // Atualiza a lista sem dar F5
+            } else {
+                const err = await response.json();
+                alert("Erro: " + (err.detail || "Não foi possível adicionar."));
+            }
         } catch (err) { alert("Erro de conexão."); }
+        finally { document.getElementById('btnAdd').disabled = false; }
     }
 
-    // FUNÇÃO REMOVER
+    // 3. FUNÇÃO REMOVER
     window.remover = async function(email) {
-        if (!confirm(`Deseja remover o acesso de ${email}?`)) return;
+        if (!confirm(`Remover acesso de ${email}?`)) return;
 
         try {
             const response = await fetch('/admin/remover', {
-                method: 'POST',
+                method: 'POST', // Mudamos para POST para facilitar o envio do JSON
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email: email })
             });
 
-            if (response.ok) location.reload();
-            else alert("Erro ao remover e-mail.");
+            if (response.ok) {
+                carregarEmails(); 
+            } else {
+                alert("Erro ao remover e-mail.");
+            }
         } catch (err) { alert("Erro de conexão."); }
     }
 
-    // FUNÇÃO LOGOUT
+    // 4. FUNÇÃO LOGOUT
     window.fazerLogout = async function() {
-        if (!confirm("Deseja realmente sair do sistema?")) return;
-
+        if (!confirm("Deseja sair do painel administrativo?")) return;
         try {
-            // 1. Desloga do Firebase (Front-end)
             await signOut(auth);
-
-            // 2. Limpa a sessão no Python (Back-end)
             await fetch('/logout', { method: 'POST' });
-
-            // 3. Vai para a tela de entrada
             window.location.href = "/entrar";
         } catch (error) {
-            console.error("Erro no logout:", error);
-            alert("Erro ao sair. Tente fechar o navegador.");
+            window.location.href = "/entrar";
         }
     }
+
+    // Iniciar carregamento
+    window.onload = carregarEmails;
 </script>
 
 </body>
