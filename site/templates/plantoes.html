@@ -61,6 +61,9 @@
             } catch (e) { console.error(e); }
         }
         carregarDados();
+        const messaging = getMessaging(app);
+        const token = await getToken(messaging, { vapidKey: 'SUA_CHAVE_PUBLICA' });
+        // Envie este 'token' para o seu Python salvar no banco junto com o e-mail do usuário
     </script>
 </body>
 </html>
