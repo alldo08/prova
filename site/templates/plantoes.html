@@ -80,37 +80,44 @@
 
             // 2. Sistema de Notificações Push
             if ('serviceWorker' in navigator) {
-                const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
-                console.log('Service Worker ativo!');
-
-                const permission = await Notification.requestPermission();
-                
-                if (permission === 'granted') {
-                    // Chave VAPID configurada
-                    const minhaChaveVapid = "BC7zbeWE877fjqP2LVPBaZy96e3gJPK2pMxSpxLTzfhkBW_AuOz-wPIiktcvGY_OFJnAdxsoHPnvuSob-Y_ymXA"; 
-
-                    const token = await getToken(messaging, { 
-                        serviceWorkerRegistration: registration,
-                        vapidKey: minhaChaveVapid 
-                    });
-
-                    if (token) {
-                        console.log("SUCESSO! Token gerado:", token);
-                        // Opcional: alert("Token gerado com sucesso!");
+                try {
+                    // 1. Registra o arquivo
+                    const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
+                    console.log('Service Worker registrado, aguardando ativação...');
+            
+                    // 2. FORÇA A ESPERA ATÉ FICAR ATIVO
+                    await navigator.serviceWorker.ready; 
+                    
+                    // Pequena verificação extra para garantir que o worker está controlando a página
+                    if (!navigator.serviceWorker.controller) {
+                        // Recarrega o controle se necessário
+                        await new Promise(resolve => {
+                            navigator.serviceWorker.addEventListener('controllerchange', resolve, { once: true });
+                            window.location.reload(); // Às vezes um reload rápido resolve o vínculo
+                        });
                     }
-
-                    onMessage(messaging, (payload) => {
-                        console.log('Notificação recebida:', payload);
-                        alert(`📢 ${payload.notification.title}\n${payload.notification.body}`);
-                    });
-                } else {
-                    console.warn("Permissão de notificação negada.");
+            
+                    const permission = await Notification.requestPermission();
+                    
+                    if (permission === 'granted') {
+                        const minhaChaveVapid = "BC7zbeWE877fjqP2LVPBaZy96e3gJPK2pMxSpxLTzfhkBW_AuOz-wPIiktcvGY_OFJnAdxsoHPnvuSob-Y_ymXA"; 
+            
+                        // 3. Gera o token
+                        const messaging = getMessaging(app);
+                        const token = await getToken(messaging, { 
+                            serviceWorkerRegistration: registration,
+                            vapidKey: minhaChaveVapid 
+                        });
+            
+                        if (token) {
+                            console.log("SUCESSO! Token gerado:", token);
+                            // DICA: Copie este código que vai aparecer no F12
+                        }
+                    }
+                } catch (err) {
+                    console.error("Erro detalhado no registro:", err);
                 }
             }
-        } catch (e) {
-            console.error("Erro ao carregar dados:", e);
-        }
-    }
 
     carregarDados();
 
