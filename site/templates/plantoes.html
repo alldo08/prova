@@ -8,19 +8,13 @@
     <style>
         :root { --primary: #1abc9c; --dark: #2c3e50; --bg: #f4f7f6; }
         body { font-family: 'Segoe UI', sans-serif; background: var(--bg); margin: 0; display: flex; }
-        
-        /* Sidebar da Foto */
         .sidebar { width: 250px; background: white; height: 100vh; position: fixed; display: flex; flex-direction: column; align-items: center; padding-top: 40px; box-shadow: 2px 0 10px rgba(0,0,0,0.05); }
         .profile-img { width: 120px; height: 120px; border-radius: 50%; object-fit: cover; border: 4px solid var(--primary); margin-bottom: 15px; }
         .user-name { font-weight: bold; color: var(--dark); margin-bottom: 20px; text-align: center; padding: 0 10px; }
         .sidebar a { text-decoration: none; color: var(--dark); font-size: 14px; margin-bottom: 10px; transition: color 0.3s; }
         .sidebar a:hover { color: var(--primary); }
-
-        /* Área Central */
         .main-content { margin-left: 250px; flex-grow: 1; padding: 40px; }
         .header-title { color: var(--dark); margin-bottom: 30px; border-bottom: 2px solid var(--primary); display: inline-block; padding-bottom: 5px; }
-
-        /* Grid de Plantões */
         .grid-plantoes { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; }
         .card-plantao { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); border-left: 5px solid var(--primary); transition: transform 0.2s; cursor: pointer; }
         .card-plantao:hover { transform: translateY(-5px); box-shadow: 0 6px 12px rgba(0,0,0,0.1); }
@@ -40,7 +34,6 @@
 
     <main class="main-content">
         <h2 class="header-title">Plantões Disponíveis</h2>
-        
         <div class="grid-plantoes" id="listaPlantoes">
             <div class="card-plantao" onclick="alert('Detalhes em breve!')">
                 <h3>Hospital Regional</h3>
@@ -66,13 +59,12 @@
         measurementId: "G-12TW5Q57JE"
         };
 
-
     const app = initializeApp(firebaseConfig);
     const messaging = getMessaging(app);
 
     async function carregarDados() {
         try {
-            // 1. Carregar dados do perfil
+            // 1. Perfil
             const res = await fetch('/obter-perfil');
             if (res.ok) {
                 const d = await res.json();
@@ -80,49 +72,37 @@
                 document.getElementById('userName').innerText = d.nome || 'Usuário';
             }
 
-            // 2. Sistema de Notificações Push
+            // 2. Notificações
             if ('serviceWorker' in navigator) {
-                try {
-                    // 1. Registra o arquivo
-                    const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
-                    console.log('Service Worker registrado, aguardando ativação...');
-            
-                    // 2. FORÇA A ESPERA ATÉ FICAR ATIVO
-                    await navigator.serviceWorker.ready; 
+                const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
+                console.log('Service Worker registrado!');
+
+                await navigator.serviceWorker.ready;
+                console.log('Service Worker ativo e pronto.');
+
+                const permission = await Notification.requestPermission();
+                if (permission === 'granted') {
+                    const minhaChaveVapid = "BC7zbeWE877fjqP2LVPBaZy96e3gJPK2pMxSpxLTzfhkBW_AuOz-wPIiktcvGY_OFJnAdxsoHPnvuSob-Y_ymXA";
                     
-                    // Pequena verificação extra para garantir que o worker está controlando a página
-                    if (!navigator.serviceWorker.controller) {
-                        // Recarrega o controle se necessário
-                        await new Promise(resolve => {
-                            navigator.serviceWorker.addEventListener('controllerchange', resolve, { once: true });
-                            window.location.reload(); // Às vezes um reload rápido resolve o vínculo
-                        });
+                    const token = await getToken(messaging, { 
+                        serviceWorkerRegistration: registration,
+                        vapidKey: minhaChaveVapid 
+                    });
+
+                    if (token) {
+                        console.log("SUCESSO! Token gerado:", token);
                     }
-            
-                    const permission = await Notification.requestPermission();
-                    
-                    if (permission === 'granted') {
-                        const minhaChaveVapid = "BC7zbeWE877fjqP2LVPBaZy96e3gJPK2pMxSpxLTzfhkBW_AuOz-wPIiktcvGY_OFJnAdxsoHPnvuSob-Y_ymXA"; 
-            
-                        // 3. Gera o token
-                        const messaging = getMessaging(app);
-                        const token = await getToken(messaging, { 
-                            serviceWorkerRegistration: registration,
-                            vapidKey: minhaChaveVapid 
-                        });
-            
-                        if (token) {
-                            console.log("SUCESSO! Token gerado:", token);
-                            // DICA: Copie este código que vai aparecer no F12
-                        }
-                    }
-                } catch (err) {
-                    console.error("Erro detalhado no registro:", err);
                 }
             }
+        } catch (e) {
+            console.error("Erro geral:", e);
+        }
+    }
 
+    // Inicia a carga
     carregarDados();
 
+    // Logout
     window.fazerLogout = async function() {
         if (!confirm("Deseja realmente sair?")) return;
         try {
